@@ -21,7 +21,8 @@ const getConsensus = (header: Header) => {
   if (header.digest.logs.length === 0) return
   const preRuntime = header.digest.logs[0].asPreRuntime
   const [consensusEngine, slot] = preRuntime
-  return { consensusEngine, slot, rest: header.digest.logs.slice(1) }
+  // HACK: return slice.2 to overcome the nimbus digest
+  return { consensusEngine, slot, rest: header.digest.logs.slice(2) }
 }
 
 const getNewSlot = (digest: RawBabePreDigest, slotNumber: number) => {
@@ -59,7 +60,8 @@ export const newHeader = async (head: Block) => {
   let newLogs = parentHeader.digest.logs as any
   const consensus = getConsensus(parentHeader)
   if (consensus?.consensusEngine.isAura) {
-    const slot = await getCurrentSlot(head.chain)
+    // Get slot from previous digest
+    const slot = Number(newLogs[0].asPreRuntime[1].reverse().toHex());
     const newSlot = compactAddLength(meta.registry.createType('Slot', slot + 1).toU8a())
     newLogs = [{ PreRuntime: [consensus.consensusEngine, newSlot] }, ...consensus.rest]
   } else if (consensus?.consensusEngine.isBabe) {
