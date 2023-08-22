@@ -14,6 +14,7 @@ import {
   SetNimbusAuthorInherent,
   SetTimestamp,
   SetValidationData,
+  SetLatestAuthorData,
 } from '@acala-network/chopsticks-core/blockchain/inherent'
 import { StorageValues } from '@acala-network/chopsticks-core/utils/set-storage'
 import { createServer } from '@acala-network/chopsticks/server'
@@ -71,6 +72,7 @@ export const setupAll = async ({
         new ParaInherentEnter(),
         new SetNimbusAuthorInherent(),
         new SetBabeRandomness(),
+        new SetLatestAuthorData(),
       ])
 
       blockHash ??= await api.getBlockHash().then((hash) => hash ?? undefined)
