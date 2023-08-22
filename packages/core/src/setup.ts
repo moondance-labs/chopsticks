@@ -14,6 +14,7 @@ import {
   InherentProviders,
   ParaInherentEnter,
   SetBabeRandomness,
+  SetLatestAuthorData,
   SetNimbusAuthorInherent,
   SetTimestamp,
   SetValidationData,
@@ -88,6 +89,7 @@ export const setup = async (options: Options) => {
     new ParaInherentEnter(),
     new SetNimbusAuthorInherent(),
     new SetBabeRandomness(),
+    new SetLatestAuthorData(),
   ])
 
   return new Blockchain({

@@ -20,7 +20,7 @@ export type LatestAuthorData = {
 export class SetLatestAuthorData implements CreateInherents {
   async createInherents(parent: Block, _params: BuildBlockParams): Promise<HexString[]> {
     const meta = await parent.meta
-    if (!meta.tx.authorNoting?.SetLatestAuthorData) {
+    if (!meta.tx.authorNoting?.setLatestAuthorData) {
       return []
     }
 
@@ -28,7 +28,7 @@ export class SetLatestAuthorData implements CreateInherents {
 
     data =  MOCK_LATEST_AUTHOR as LatestAuthorData
 
-    const inherent = new GenericExtrinsic(meta.registry, meta.tx.authorNoting.SetLatestAuthorData(data))
+    const inherent = new GenericExtrinsic(meta.registry, meta.tx.authorNoting.setLatestAuthorData(data))
 
     return [inherent.toHex()]
   }
