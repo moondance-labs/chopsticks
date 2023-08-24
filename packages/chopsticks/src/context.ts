@@ -2,7 +2,7 @@ import './utils/tunnel'
 import { Config } from './schema'
 import { HexString } from '@polkadot/util/types'
 import { overrideStorage, overrideWasm } from './utils/override'
-import { setup, timeTravel } from '@acala-network/chopsticks-core'
+import { setup, timeTravel } from '@tanssi/chopsticks-core'
 
 export const setupContext = async (argv: Config, overrideParent = false) => {
   const chain = await setup({

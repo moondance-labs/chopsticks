@@ -1,4 +1,4 @@
-import { Blockchain } from '@acala-network/chopsticks-core'
+import { Blockchain } from '@tanssi/chopsticks-core'
 import { defaultLogger } from '../logger'
 
 export const logger = defaultLogger.child({ name: 'rpc' })

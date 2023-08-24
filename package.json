@@ -1,6 +1,6 @@
 {
 	"name": "chopsticks-monorepo",
-	"author": "Bryan Chen <xlchen1291@gmail.com>",
+	"author": "Moondance Labs",
 	"license": "Apache-2.0",
 	"packageManager": "yarn@3.5.0",
 	"private": true,
@@ -14,7 +14,7 @@
 		"prepare": "husky install",
 		"clean": "yarn workspaces foreach -pvit run clean",
 		"build": "yarn workspaces foreach -pvit run build",
-		"build-wasm": "yarn workspace @acala-network/chopsticks-executor build",
+		"build-wasm": "yarn workspace @tanssi/chopsticks-executor build",
 		"check": "cd executor && cargo check --locked",
 		"test": "vitest run",
 		"test:watch": "vitest",

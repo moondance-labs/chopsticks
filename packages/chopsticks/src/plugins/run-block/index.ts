@@ -8,7 +8,7 @@ import { Config } from '../../schema'
 import { defaultLogger } from '../../logger'
 import { generateHtmlDiffPreviewFile } from '../../utils/generate-html-diff'
 import { openHtml } from '../../utils/open-html'
-import { runTask, taskHandler } from '@acala-network/chopsticks-core'
+import { runTask, taskHandler } from '@tanssi/chopsticks-core'
 import { setupContext } from '../../context'
 
 export const cli = (y: yargs.Argv) => {

@@ -5,7 +5,7 @@ import { hexToU8a } from '@polkadot/util'
 import { Config } from '../../schema'
 import { defaultLogger } from '../../logger'
 import { generateHtmlDiffPreviewFile } from '../../utils/generate-html-diff'
-import { newHeader, runTask, setStorage, taskHandler } from '@acala-network/chopsticks-core'
+import { newHeader, runTask, setStorage, taskHandler } from '@tanssi/chopsticks-core'
 import { openHtml } from '../../utils/open-html'
 import { setupContext } from '../../context'
 

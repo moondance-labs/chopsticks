@@ -1,4 +1,4 @@
-import { Block } from '@acala-network/chopsticks-core'
+import { Block } from '@tanssi/chopsticks-core'
 import { Handler, ResponseError } from '../../rpc/shared'
 
 export const rpc: Handler = async (context, [hashOrNumber]) => {

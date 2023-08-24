@@ -1,4 +1,4 @@
-import { BuildBlockMode } from '@acala-network/chopsticks-core'
+import { BuildBlockMode } from '@tanssi/chopsticks-core'
 import { Handler, ResponseError } from '../../rpc/shared'
 import { defaultLogger } from '../../logger'
 

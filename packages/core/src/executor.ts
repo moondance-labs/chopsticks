@@ -11,10 +11,10 @@ import {
   decode_proof,
   get_runtime_version,
   run_task,
-} from '@acala-network/chopsticks-executor'
+} from '@tanssi/chopsticks-executor'
 import { defaultLogger, truncate } from './logger'
 import _ from 'lodash'
-import type { JsCallback } from '@acala-network/chopsticks-executor'
+import type { JsCallback } from '@tanssi/chopsticks-executor'
 
 export { JsCallback }
 

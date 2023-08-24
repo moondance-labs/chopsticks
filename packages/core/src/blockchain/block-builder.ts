@@ -7,21 +7,42 @@ import {
   TransactionValidityError,
 } from '@polkadot/types/interfaces'
 import { Block, TaskCallResponse } from './block'
+import { Blockchain } from '.'
 import { GenericExtrinsic } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
 import { StorageLayer, StorageValueKind } from './storage-layer'
-import { compactAddLength, hexToU8a, stringToHex, u8aConcat } from '@polkadot/util'
+import { compactAddLength, hexToU8a, stringToHex, u8aConcat, u8aToBigInt } from '@polkadot/util'
 import { compactHex } from '../utils'
 import { defaultLogger, truncate } from '../logger'
 import { getCurrentSlot } from '../utils/time-travel'
 
 const logger = defaultLogger.child({ name: 'block-builder' })
 
-const getConsensus = (header: Header) => {
-  if (header.digest.logs.length === 0) return
-  const preRuntime = header.digest.logs[0].asPreRuntime
-  const [consensusEngine, slot] = preRuntime
-  return { consensusEngine, slot, rest: header.digest.logs.slice(1) }
+const parseHeader = (header: Header) => {
+  if (header.digest.logs.length === 0) {
+    return {}
+  }
+  const preRuntimes = header.digest.logs
+    .filter((log) => log.isPreRuntime)!
+    .map((digestItem) => ({ consensusEngine: digestItem.asPreRuntime[0], slot: digestItem.asPreRuntime[1] }))!
+  const rest = header.digest.logs.filter((log) => !log.isPreRuntime)!
+
+  return { preRuntimes, rest }
+}
+
+const parseVec32 = (hexString: string) => {
+  const stripped = hexString.startsWith('0x') ? hexString.slice(4) : hexString.slice(2)
+
+  if (stripped.length % 64 !== 0) {
+    throw new Error('Invalid hexString length')
+  }
+
+  return Array.from({ length: stripped.length / 64 }, (_, idx) => '0x' + stripped.slice(idx * 64, (idx + 1) * 64))
+}
+
+export const getAuthorities = async (chain: Blockchain) => {
+  const rawResponse = await chain.api.getRuntimeApiResponse('AuraApi_authorities')
+  return parseVec32(rawResponse)
 }
 
 const getNewSlot = (digest: RawBabePreDigest, slotNumber: number) => {
@@ -57,35 +78,64 @@ export const newHeader = async (head: Block) => {
   const parentHeader = await head.header
 
   let newLogs = parentHeader.digest.logs as any
-  const consensus = getConsensus(parentHeader)
-  if (consensus?.consensusEngine.isAura) {
-    const slot = await getCurrentSlot(head.chain)
-    const newSlot = compactAddLength(meta.registry.createType('Slot', slot + 1).toU8a())
-    newLogs = [{ PreRuntime: [consensus.consensusEngine, newSlot] }, ...consensus.rest]
-  } else if (consensus?.consensusEngine.isBabe) {
-    const slot = await getCurrentSlot(head.chain)
-    const digest = meta.registry.createType<RawBabePreDigest>('RawBabePreDigest', consensus.slot)
-    const newSlot = compactAddLength(meta.registry.createType('RawBabePreDigest', getNewSlot(digest, slot + 1)).toU8a())
-    newLogs = [{ PreRuntime: [consensus.consensusEngine, newSlot] }, ...consensus.rest]
-  } else if (consensus?.consensusEngine?.toString() == 'nmbs') {
-    const nmbsKey = stringToHex('nmbs')
-    newLogs = [
-      {
-        // Using previous block author
-        PreRuntime: [
-          consensus.consensusEngine,
-          parentHeader.digest.logs
-            .find((log) => log.isPreRuntime && log.asPreRuntime[0].toHex() == nmbsKey)
-            ?.asPreRuntime[1].toHex(),
-        ],
-      },
-      ...consensus.rest,
-    ]
 
-    if (meta.query.randomness) {
-      // TODO: shouldn't modify existing head
-      // reset notFirstBlock so randomness will skip validation
-      head.pushStorageLayer().set(compactHex(meta.query.randomness.notFirstBlock()), StorageValueKind.Deleted)
+  const { preRuntimes, rest } = parseHeader(parentHeader)
+
+  // Tanssi Consensus Logic
+  if (
+    preRuntimes?.find(({ consensusEngine }) => consensusEngine.isAura) &&
+    preRuntimes?.find(({ consensusEngine }) => consensusEngine.isNimbus)
+  ) {
+    const authorities = await getAuthorities(head.chain)
+    const auraBlob = preRuntimes?.find((x) => x.consensusEngine.isAura)
+    const nimbusBlob = preRuntimes?.find((x) => x.consensusEngine.toString() == 'nmbs')
+    const prevSlot = Number(newLogs[0].asPreRuntime[1].reverse().toHex())
+    const newSlot = compactAddLength(meta.registry.createType('Slot', prevSlot + 1).toU8a())
+    const newKey = meta.registry.createType(
+      'NimbusPrimitivesNimbusCryptoPublic',
+      authorities[(prevSlot + 1) % authorities.length],
+    )
+    newLogs = [
+      { PreRuntime: [auraBlob!.consensusEngine, newSlot] },
+      { PreRuntime: [nimbusBlob?.consensusEngine, newKey] },
+      ...rest!,
+    ]
+  } else {
+    const { consensusEngine, slot: originalSlot } = preRuntimes![0]
+
+    // Standard Consensus Logic
+    if (consensusEngine.isAura) {
+      // Get slot from previous digest (reversed to get big endian value)
+      const prevSlot = u8aToBigInt(originalSlot, { isLe: true })
+      const newSlot = compactAddLength(meta.registry.createType('Slot', prevSlot + 1n).toU8a())
+      newLogs = [{ PreRuntime: [consensusEngine, newSlot] }, ...rest!]
+    } else if (consensusEngine.isBabe) {
+      const slot = await getCurrentSlot(head.chain)
+      const digest = meta.registry.createType<RawBabePreDigest>('RawBabePreDigest', slot)
+      const newSlot = compactAddLength(
+        meta.registry.createType('RawBabePreDigest', getNewSlot(digest, slot + 1)).toU8a(),
+      )
+      newLogs = [{ PreRuntime: [consensusEngine, newSlot] }, ...rest!]
+    } else if (consensusEngine?.toString() == 'nmbs') {
+      const nmbsKey = stringToHex('nmbs')
+      newLogs = [
+        {
+          // Using previous block author
+          PreRuntime: [
+            consensusEngine,
+            parentHeader.digest.logs
+              .find((log) => log.isPreRuntime && log.asPreRuntime[0].toHex() == nmbsKey)
+              ?.asPreRuntime[1].toHex(),
+          ],
+        },
+        ...rest!,
+      ]
+
+      if (meta.query.randomness) {
+        // TODO: shouldn't modify existing head
+        // reset notFirstBlock so randomness will skip validation
+        head.pushStorageLayer().set(compactHex(meta.query.randomness.notFirstBlock()), StorageValueKind.Deleted)
+      }
     }
   }
 

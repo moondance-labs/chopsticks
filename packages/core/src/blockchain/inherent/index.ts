@@ -8,6 +8,7 @@ export { SetValidationData } from './parachain/validation-data'
 export { ParaInherentEnter } from './para-enter'
 export { SetBabeRandomness } from './parachain/babe-randomness'
 export { SetNimbusAuthorInherent } from './parachain/nimbus-author-inherent'
+export { SetLatestAuthorData } from './parachain/latest-author'
 
 export interface CreateInherents {
   createInherents(parent: Block, params: BuildBlockParams): Promise<HexString[]>

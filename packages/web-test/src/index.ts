@@ -6,7 +6,7 @@ const extrinsic = document.getElementById('extrinsic') as HTMLTextAreaElement
 const submit = document.getElementById('submit') as HTMLInputElement
 const result = document.getElementById('result') as HTMLPreElement
 
-import { setStorage, setup } from '@acala-network/chopsticks-core'
+import { setStorage, setup } from '@tanssi/chopsticks-core'
 ;(async () => {
   const chain = await setup({
     endpoint: 'wss://acala-rpc-0.aca-api.network',

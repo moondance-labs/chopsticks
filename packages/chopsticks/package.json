@@ -1,7 +1,7 @@
 {
-	"name": "@acala-network/chopsticks",
+	"name": "@tanssi/chopsticks",
 	"version": "0.8.0-5",
-	"author": "Bryan Chen <xlchen1291@gmail.com>",
+	"author": "Moondance Labs",
 	"license": "Apache-2.0",
 	"bin": "./chopsticks.js",
 	"scripts": {
@@ -16,9 +16,9 @@
 		"dev:moonbeam": "cd ../..; ts-node-dev --transpile-only --inspect -r tsconfig-paths/register --notify=false packages/chopsticks/src/cli.ts -- --config=configs/moonbeam.yml"
 	},
 	"dependencies": {
-		"@acala-network/chopsticks-core": "workspace:*",
 		"@pnpm/npm-conf": "^2.2.2",
 		"@polkadot/api": "^10.9.1",
+		"@tanssi/chopsticks-core": "workspace:*",
 		"axios": "^1.4.0",
 		"dotenv": "^16.3.1",
 		"global-agent": "^3.0.0",

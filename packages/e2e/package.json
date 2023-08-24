@@ -1,6 +1,6 @@
 {
-	"name": "@acala-network/chopsticks-e2e",
-	"author": "Bryan Chen <xlchen1291@gmail.com>",
+	"name": "@tanssi/chopsticks-e2e",
+	"author": "",
 	"license": "Apache-2.0",
 	"private": true,
 	"scripts": {
@@ -10,9 +10,9 @@
 		"node": ">=v14"
 	},
 	"dependencies": {
-		"@acala-network/chopsticks": "workspace:*",
-		"@acala-network/chopsticks-testing": "workspace:*",
-		"@polkadot/api": "^10.9.1"
+		"@polkadot/api": "^10.9.1",
+		"@tanssi/chopsticks": "workspace:*",
+		"@tanssi/chopsticks-testing": "workspace:*"
 	},
 	"devDependencies": {
 		"typescript": "^5.1.6",
