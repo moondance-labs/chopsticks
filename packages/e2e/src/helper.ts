@@ -3,10 +3,10 @@ import { Codec } from '@polkadot/types/types'
 import { HexString } from '@polkadot/util/types'
 import { beforeAll, beforeEach, expect, vi } from 'vitest'
 
-import { Api } from '@acala-network/chopsticks'
-import { Blockchain } from '@acala-network/chopsticks-core/blockchain'
-import { BuildBlockMode } from '@acala-network/chopsticks-core/blockchain/txpool'
-import { GenesisProvider } from '@acala-network/chopsticks-core/genesis-provider'
+import { Api } from '@tanssi/chopsticks'
+import { Blockchain } from '@tanssi/chopsticks-core/blockchain'
+import { BuildBlockMode } from '@tanssi/chopsticks-core/blockchain/txpool'
+import { GenesisProvider } from '@tanssi/chopsticks-core/genesis-provider'
 import {
   InherentProviders,
   ParaInherentEnter,
@@ -15,13 +15,13 @@ import {
   SetTimestamp,
   SetValidationData,
   SetLatestAuthorData,
-} from '@acala-network/chopsticks-core/blockchain/inherent'
-import { StorageValues } from '@acala-network/chopsticks-core/utils/set-storage'
-import { createServer } from '@acala-network/chopsticks/server'
-import { defer } from '@acala-network/chopsticks-core/utils'
-import { handler } from '@acala-network/chopsticks/rpc'
+} from '@tanssi/chopsticks-core/blockchain/inherent'
+import { StorageValues } from '@tanssi/chopsticks-core/utils/set-storage'
+import { createServer } from '@tanssi/chopsticks/server'
+import { defer } from '@tanssi/chopsticks-core/utils'
+import { handler } from '@tanssi/chopsticks/rpc'
 
-export { expectJson, expectHex, testingPairs } from '@acala-network/chopsticks-testing'
+export { expectJson, expectHex, testingPairs } from '@tanssi/chopsticks-testing'
 
 export type SetupOption = {
   endpoint?: string

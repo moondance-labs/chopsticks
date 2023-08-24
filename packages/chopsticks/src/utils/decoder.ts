@@ -1,4 +1,4 @@
-import { Block, decodeBlockStorageDiff } from '@acala-network/chopsticks-core'
+import { Block, decodeBlockStorageDiff } from '@tanssi/chopsticks-core'
 import { HexString } from '@polkadot/util/types'
 import { create } from 'jsondiffpatch'
 import _ from 'lodash'

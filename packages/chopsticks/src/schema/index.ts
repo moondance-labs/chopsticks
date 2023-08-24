@@ -1,4 +1,4 @@
-import { BuildBlockMode, defaultLogger, genesisSchema, isUrl } from '@acala-network/chopsticks-core'
+import { BuildBlockMode, defaultLogger, genesisSchema, isUrl } from '@tanssi/chopsticks-core'
 import { basename, extname } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { z } from 'zod'

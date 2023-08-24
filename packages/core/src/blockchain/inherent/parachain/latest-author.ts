@@ -5,17 +5,17 @@ import { Block } from '../../block'
 import { BuildBlockParams } from '../../txpool'
 import { CreateInherents } from '..'
 
-const MOCK_LATEST_AUTHOR = {
-  relayStorageProof: {
-    trieNodes: [],
-  },
-}
-
 export type LatestAuthorData = {
   relayStorageProof: {
     trieNodes: HexString[]
   }
 }
+
+const MOCK_LATEST_AUTHOR = {
+  relayStorageProof: {
+    trieNodes: [],
+  },
+} satisfies LatestAuthorData
 
 export class SetLatestAuthorData implements CreateInherents {
   async createInherents(parent: Block, _params: BuildBlockParams): Promise<HexString[]> {
@@ -24,9 +24,7 @@ export class SetLatestAuthorData implements CreateInherents {
       return []
     }
 
-    let data: LatestAuthorData
-
-    data =  MOCK_LATEST_AUTHOR as LatestAuthorData
+    const data = MOCK_LATEST_AUTHOR
 
     const inherent = new GenericExtrinsic(meta.registry, meta.tx.authorNoting.setLatestAuthorData(data))
 

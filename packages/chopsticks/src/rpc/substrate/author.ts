@@ -1,4 +1,4 @@
-import { APPLY_EXTRINSIC_ERROR, Block } from '@acala-network/chopsticks-core'
+import { APPLY_EXTRINSIC_ERROR, Block } from '@tanssi/chopsticks-core'
 import { Handlers, ResponseError } from '../shared'
 import { TransactionValidityError } from '@polkadot/types/interfaces'
 import { defaultLogger } from '../../logger'

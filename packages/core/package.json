@@ -1,7 +1,7 @@
 {
-	"name": "@acala-network/chopsticks-core",
+	"name": "@tanssi/chopsticks-core",
 	"version": "0.8.0-5",
-	"author": "Bryan Chen <xlchen1291@gmail.com>",
+	"author": "Moondance Labs",
 	"license": "Apache-2.0",
 	"scripts": {
 		"clean": "rm -rf lib tsconfig.tsbuildinfo",
@@ -9,9 +9,9 @@
 		"build": "yarn pack-wasm; tsc -p ./tsconfig.json"
 	},
 	"dependencies": {
-		"@acala-network/chopsticks-executor": "workspace:*",
 		"@polkadot/api": "^10.9.1",
 		"@polkadot/util-crypto": "^12.3.2",
+		"@tanssi/chopsticks-executor": "workspace:*",
 		"axios": "^1.4.0",
 		"eventemitter3": "^5.0.1",
 		"localforage": "^1.10.0",

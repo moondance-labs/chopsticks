@@ -1,4 +1,4 @@
-import { Blockchain, StorageValues, setStorage } from '@acala-network/chopsticks-core'
+import { Blockchain, StorageValues, setStorage } from '@tanssi/chopsticks-core'
 import { HexString } from '@polkadot/util/types'
 import { existsSync, readFileSync } from 'node:fs'
 import yaml from 'js-yaml'
