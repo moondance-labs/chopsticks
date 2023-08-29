@@ -1,6 +1,6 @@
 {
 	"name": "@tanssi/chopsticks",
-	"version": "0.8.0-5",
+	"version": "0.8.0-7",
 	"author": "Moondance Labs",
 	"license": "Apache-2.0",
 	"bin": "./chopsticks.js",
