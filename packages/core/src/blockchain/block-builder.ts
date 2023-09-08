@@ -85,10 +85,8 @@ export const newHeader = async (head: Block) => {
   if (
     preRuntimes?.find(({ consensusEngine }) => consensusEngine.isAura) &&
     preRuntimes?.find(({ consensusEngine }) => consensusEngine.isNimbus)
-  ) {
-    
+  ) { 
     const authorities = await getAuthorities(head.chain, u8aToHex(parentHeader.hash))
-
     const auraBlob = preRuntimes?.find((x) => x.consensusEngine.isAura)
     const nimbusBlob = preRuntimes?.find((x) => x.consensusEngine.toString() == 'nmbs')
     const prevSlot = Number(newLogs[0].asPreRuntime[1].reverse().toHex())
@@ -97,7 +95,6 @@ export const newHeader = async (head: Block) => {
       'NimbusPrimitivesNimbusCryptoPublic',
       authorities[(prevSlot + 1) % authorities.length],
     )
-
     newLogs = [
       { PreRuntime: [auraBlob!.consensusEngine, newSlot] },
       { PreRuntime: [nimbusBlob?.consensusEngine, newKey] },
