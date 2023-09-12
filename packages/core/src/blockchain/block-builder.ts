@@ -11,7 +11,7 @@ import { Blockchain } from '.'
 import { GenericExtrinsic } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
 import { StorageLayer, StorageValueKind } from './storage-layer'
-import { compactAddLength, hexToU8a, stringToHex, u8aConcat, u8aToBigInt } from '@polkadot/util'
+import { compactAddLength, hexToU8a, stringToHex, u8aConcat, u8aToBigInt, u8aToHex } from '@polkadot/util'
 import { compactHex } from '../utils'
 import { defaultLogger, truncate } from '../logger'
 import { getCurrentSlot } from '../utils/time-travel'
@@ -40,8 +40,8 @@ const parseVec32 = (hexString: string) => {
   return Array.from({ length: stripped.length / 64 }, (_, idx) => '0x' + stripped.slice(idx * 64, (idx + 1) * 64))
 }
 
-export const getAuthorities = async (chain: Blockchain) => {
-  const rawResponse = await chain.api.getRuntimeApiResponse('AuraApi_authorities')
+export const getAuthorities = async (chain: Blockchain, hash: HexString) => {
+  const rawResponse = await chain.api.getRuntimeApiResponse('AuraApi_authorities', ["0x", hash])
   return parseVec32(rawResponse)
 }
 
@@ -85,8 +85,8 @@ export const newHeader = async (head: Block) => {
   if (
     preRuntimes?.find(({ consensusEngine }) => consensusEngine.isAura) &&
     preRuntimes?.find(({ consensusEngine }) => consensusEngine.isNimbus)
-  ) {
-    const authorities = await getAuthorities(head.chain)
+  ) { 
+    const authorities = await getAuthorities(head.chain, u8aToHex(parentHeader.hash))
     const auraBlob = preRuntimes?.find((x) => x.consensusEngine.isAura)
     const nimbusBlob = preRuntimes?.find((x) => x.consensusEngine.toString() == 'nmbs')
     const prevSlot = Number(newLogs[0].asPreRuntime[1].reverse().toHex())
