@@ -93,10 +93,6 @@ export class Api {
     )
   }
 
-  async getRuntimeApiResponse(runtimeApiCall: string, params: string[] = ['0x']) {
-    return this.#provider.send<string>('state_call', [runtimeApiCall, ...params])
-  }
-
   async getHeader(hash?: string) {
     return this.#provider.send<Header | null>('chain_getHeader', hash ? [hash] : [])
   }
