@@ -11,7 +11,7 @@ import { Blockchain } from '.'
 import { GenericExtrinsic } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
 import { StorageLayer, StorageValueKind } from './storage-layer'
-import { compactAddLength, hexToU8a, stringToHex, u8aConcat, u8aToBigInt, u8aToHex } from '@polkadot/util'
+import { compactAddLength, hexToU8a, stringToHex, u8aConcat, u8aToBigInt } from '@polkadot/util'
 import { compactHex } from '../utils'
 import { defaultLogger, truncate } from '../logger'
 import { getCurrentSlot } from '../utils/time-travel'
@@ -30,19 +30,11 @@ const parseHeader = (header: Header) => {
   return { preRuntimes, rest }
 }
 
-const parseVec32 = (hexString: string) => {
-  const stripped = hexString.startsWith('0x') ? hexString.slice(4) : hexString.slice(2)
-
-  if (stripped.length % 64 !== 0) {
-    throw new Error('Invalid hexString length')
-  }
-
-  return Array.from({ length: stripped.length / 64 }, (_, idx) => '0x' + stripped.slice(idx * 64, (idx + 1) * 64))
-}
-
-export const getAuthorities = async (chain: Blockchain, hash: HexString) => {
-  const rawResponse = await chain.api.getRuntimeApiResponse('AuraApi_authorities', ["0x", hash])
-  return parseVec32(rawResponse)
+export const getAuthorities = async (chain: Blockchain) => {
+  const registry = (await chain.head.meta).registry
+  const rawResponse = await chain.head.call('AuraApi_authorities', [])
+  const authorities = registry.createType('Vec<AuthorityId>', hexToU8a(rawResponse.result))
+  return authorities
 }
 
 const getNewSlot = (digest: RawBabePreDigest, slotNumber: number) => {
@@ -86,7 +78,7 @@ export const newHeader = async (head: Block) => {
     preRuntimes?.find(({ consensusEngine }) => consensusEngine.isAura) &&
     preRuntimes?.find(({ consensusEngine }) => consensusEngine.isNimbus)
   ) { 
-    const authorities = await getAuthorities(head.chain, u8aToHex(parentHeader.hash))
+    const authorities = await getAuthorities(head.chain)
     const auraBlob = preRuntimes?.find((x) => x.consensusEngine.isAura)
     const nimbusBlob = preRuntimes?.find((x) => x.consensusEngine.toString() == 'nmbs')
     const prevSlot = Number(newLogs[0].asPreRuntime[1].reverse().toHex())
