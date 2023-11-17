@@ -1,12 +1,11 @@
-import { ApiPromise, WsProvider } from '@polkadot/api'
-import { Codec } from '@polkadot/types/types'
+import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api'
+import { Codec, RegisteredTypes } from '@polkadot/types/types'
 import { HexString } from '@polkadot/util/types'
+import { ProviderInterface } from '@polkadot/rpc-provider/types'
 import { beforeAll, beforeEach, expect, vi } from 'vitest'
 
 import { Api } from '@tanssi/chopsticks'
-import { Blockchain } from '@tanssi/chopsticks-core/blockchain'
-import { BuildBlockMode } from '@tanssi/chopsticks-core/blockchain/txpool'
-import { GenesisProvider } from '@tanssi/chopsticks-core/genesis-provider'
+import { Blockchain, BuildBlockMode, StorageValues } from '@tanssi/chopsticks-core'
 import {
   InherentProviders,
   ParaInherentEnter,
@@ -14,12 +13,12 @@ import {
   SetNimbusAuthorInherent,
   SetTimestamp,
   SetValidationData,
-  SetLatestAuthorData,
-} from '@tanssi/chopsticks-core/blockchain/inherent'
-import { StorageValues } from '@tanssi/chopsticks-core/utils/set-storage'
-import { createServer } from '@tanssi/chopsticks/server'
-import { defer } from '@tanssi/chopsticks-core/utils'
-import { handler } from '@tanssi/chopsticks/rpc'
+} from '@tanssi/chopsticks-core/blockchain/inherent/index.js'
+import { SqliteDatabase } from '@tanssi/chopsticks-db'
+import { createServer } from '@tanssi/chopsticks/server.js'
+import { defer } from '@tanssi/chopsticks-core/utils/index.js'
+import { genesisFromUrl } from '@tanssi/chopsticks/context.js'
+import { handler } from '@tanssi/chopsticks/rpc/index.js'
 
 export { expectJson, expectHex, testingPairs } from '@tanssi/chopsticks-testing'
 
@@ -29,6 +28,8 @@ export type SetupOption = {
   mockSignatureHost?: boolean
   allowUnresolvedImports?: boolean
   genesis?: string
+  registeredTypes?: RegisteredTypes
+  runtimeLogLevel?: number
 }
 
 export const env = {
@@ -53,10 +54,18 @@ export const setupAll = async ({
   mockSignatureHost,
   allowUnresolvedImports,
   genesis,
+  registeredTypes = {},
+  runtimeLogLevel,
 }: SetupOption) => {
-  const api = new Api(genesis ? await GenesisProvider.fromUrl(genesis) : new WsProvider(endpoint), {
-    SetEvmOrigin: { payload: {}, extrinsic: {} },
-  })
+  let provider: ProviderInterface
+  if (genesis) {
+    provider = await genesisFromUrl(genesis)
+  } else if (/^(https|http):\/\//.test(endpoint || '')) {
+    provider = new HttpProvider(endpoint)
+  } else {
+    provider = new WsProvider(endpoint, 3_000)
+  }
+  const api = new Api(provider)
 
   await api.isReady
 
@@ -90,20 +99,17 @@ export const setupAll = async ({
         },
         mockSignatureHost,
         allowUnresolvedImports,
-        registeredTypes: {},
+        registeredTypes,
+        runtimeLogLevel,
+        db: !process.env.RUN_TESTS_WITHOUT_DB ? new SqliteDatabase('e2e-tests-db.sqlite') : undefined,
       })
 
       const { port, close } = await createServer(handler({ chain }))
 
-      const ws = new WsProvider(`ws://localhost:${port}`)
+      const ws = new WsProvider(`ws://localhost:${port}`, 3_000, undefined, 300_000)
       const apiPromise = await ApiPromise.create({
         provider: ws,
-        signedExtensions: {
-          SetEvmOrigin: {
-            extrinsic: {},
-            payload: {},
-          },
-        },
+        noInitWarn: true,
       })
 
       await apiPromise.isReady
@@ -176,8 +182,10 @@ export const dev = {
 export const mockCallback = () => {
   let next = defer()
   const callback = vi.fn((...args) => {
-    next.resolve(args)
-    next = defer()
+    delay(100).then(() => {
+      next.resolve(args)
+      next = defer()
+    })
   })
 
   return {

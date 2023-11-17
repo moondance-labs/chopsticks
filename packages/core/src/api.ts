@@ -1,8 +1,9 @@
 import { ExtDef } from '@polkadot/types/extrinsic/signedExtensions/types'
 import { HexString } from '@polkadot/util/types'
-import { ProviderInterface } from '@polkadot/rpc-provider/types'
+import { ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types'
+import { prefixedChildKey, splitChildKey, stripChildPrefix } from './utils/index.js'
 
-type ChainProperties = {
+export type ChainProperties = {
   ss58Format?: number
   tokenDecimals?: number[]
   tokenSymbol?: string[]
@@ -26,6 +27,18 @@ type SignedBlock = {
   justifications?: HexString[]
 }
 
+/**
+ * API class. Calls provider to get on-chain data.
+ * Either `endpoint` or `genesis` porvider must be provided.
+ *
+ * @example Instantiate an API
+ *
+ * ```ts
+ * const provider = new WsProvider(options.endpoint)
+ * const api = new Api(provider)
+ * await api.isReady
+ * ```
+ */
 export class Api {
   #provider: ProviderInterface
   #ready: Promise<void> | undefined
@@ -49,10 +62,12 @@ export class Api {
         this.#ready = this.#provider['isReady']
       } else {
         this.#ready = new Promise((resolve): void => {
-          this.#provider.on('connected', (): void => {
+          if (this.#provider.hasSubscriptions) {
+            this.#provider.on('connected', resolve)
+            this.#provider.connect()
+          } else {
             resolve()
-          })
-          this.#provider.connect()
+          }
         })
       }
     }
@@ -90,26 +105,62 @@ export class Api {
     return this.#provider.send<HexString | null>(
       'chain_getBlockHash',
       Number.isInteger(blockNumber) ? [blockNumber] : [],
+      !!blockNumber,
     )
   }
 
   async getHeader(hash?: string) {
-    return this.#provider.send<Header | null>('chain_getHeader', hash ? [hash] : [])
+    return this.#provider.send<Header | null>('chain_getHeader', hash ? [hash] : [], !!hash)
   }
 
   async getBlock(hash?: string) {
-    return this.#provider.send<SignedBlock | null>('chain_getBlock', hash ? [hash] : [])
+    return this.#provider.send<SignedBlock | null>('chain_getBlock', hash ? [hash] : [], !!hash)
   }
 
   async getStorage(key: string, hash?: string) {
-    const params = [key]
-    if (hash) params.push(hash)
-    return this.#provider.send<string | null>('state_getStorage', params)
+    const [child, storageKey] = splitChildKey(key as HexString)
+    if (child) {
+      // child storage key, use childstate_getStorage
+      const params = [child, storageKey]
+      if (hash) params.push(hash as HexString)
+      return this.#provider.send<HexString | null>('childstate_getStorage', params, !!hash)
+    } else {
+      // main storage key, use state_getStorage
+      const params = [key]
+      if (hash) params.push(hash)
+      return this.#provider.send<HexString | null>('state_getStorage', params, !!hash)
+    }
   }
 
   async getKeysPaged(prefix: string, pageSize: number, startKey: string, hash?: string) {
-    const params = [prefix, pageSize, startKey]
-    if (hash) params.push(hash)
-    return this.#provider.send<string[]>('state_getKeysPaged', params)
+    const [child, storageKey] = splitChildKey(prefix as HexString)
+    if (child) {
+      // child storage key, use childstate_getKeysPaged
+      // strip child prefix from startKey
+      const params = [child, storageKey, pageSize, stripChildPrefix(startKey as HexString)]
+      if (hash) params.push(hash as HexString)
+      return this.#provider
+        .send<HexString[]>('childstate_getKeysPaged', params, !!hash)
+        .then((keys) => keys.map((key) => prefixedChildKey(child, key)))
+    } else {
+      // main storage key, use state_getKeysPaged
+      const params = [prefix, pageSize, startKey]
+      if (hash) params.push(hash)
+      return this.#provider.send<HexString[]>('state_getKeysPaged', params, !!hash)
+    }
+  }
+
+  async subscribeRemoteNewHeads(cb: ProviderInterfaceCallback) {
+    if (!this.#provider.hasSubscriptions) {
+      throw new Error('subscribeRemoteNewHeads only works with subscriptions')
+    }
+    return this.#provider.subscribe('chain_newHead', 'chain_subscribeNewHeads', [], cb)
+  }
+
+  async subscribeRemoteFinalizedHeads(cb: ProviderInterfaceCallback) {
+    if (!this.#provider.hasSubscriptions) {
+      throw new Error('subscribeRemoteFinalizedHeads only works with subscriptions')
+    }
+    return this.#provider.subscribe('chain_finalizedHead', 'chain_subscribeFinalizedHeads', [], cb)
   }
 }

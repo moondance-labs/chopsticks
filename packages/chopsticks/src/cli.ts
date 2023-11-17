@@ -2,16 +2,17 @@ import { config as dotenvConfig } from 'dotenv'
 import { hideBin } from 'yargs/helpers'
 import _ from 'lodash'
 import yargs from 'yargs'
+import type { MiddlewareFunction } from 'yargs'
 
 import { Blockchain, BuildBlockMode, connectParachains, connectVertical } from '@tanssi/chopsticks-core'
-import { Config, fetchConfig } from './schema'
-import { defaultOptions, mockOptions } from './cli-options'
-import { pluginExtendCli } from './plugins'
-import { setupWithServer } from '.'
+import { Config, fetchConfig } from './schema/index.js'
+import { defaultOptions, mockOptions } from './cli-options.js'
+import { pluginExtendCli } from './plugins/index.js'
+import { setupWithServer } from './index.js'
 
 dotenvConfig()
 
-const processArgv: yargs.MiddlewareFunction<{ config?: string; port?: number }> = async (argv) => {
+const processArgv: MiddlewareFunction<{ config?: string; port?: number }> = async (argv) => {
   if (argv.config) {
     Object.assign(argv, _.defaults(argv, await fetchConfig(argv.config)))
   }
@@ -20,7 +21,7 @@ const processArgv: yargs.MiddlewareFunction<{ config?: string; port?: number }> 
 
 const commands = yargs(hideBin(process.argv))
   .scriptName('chopsticks')
-  .middleware(processArgv, true)
+  .middleware(processArgv, false)
   .command(
     '*',
     'Dev mode, fork off a chain',
@@ -43,6 +44,12 @@ const commands = yargs(hideBin(process.argv))
         'max-memory-block-count': {
           desc: 'Max memory block count',
           number: true,
+        },
+        resume: {
+          desc: `Resume from the specified block hash or block number in db.
+                 If true, it will resume from the latest block in db.
+                 Note this will override the block option`,
+          string: true,
         },
       }),
     async (argv) => {
@@ -100,4 +107,8 @@ const commands = yargs(hideBin(process.argv))
   .usage('Usage: $0 <command> [options]')
   .example('$0', '-c acala')
 
-pluginExtendCli(commands).then(() => commands.parse())
+if (!process.env.DISABLE_PLUGINS) {
+  pluginExtendCli(commands).then(() => commands.parse())
+} else {
+  commands.parse()
+}

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import path from 'path'
-
-import { api, chain, setupApi } from '../helper'
+import { api, chain, setupApi } from '../helper.js'
 import { overrideStorage, overrideWasm } from '@tanssi/chopsticks/utils/override'
 
 setupApi({

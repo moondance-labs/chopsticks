@@ -1,14 +1,13 @@
 import { Block } from '@tanssi/chopsticks-core'
 import { HexString } from '@polkadot/util/types'
-import { decodeStorageDiff } from './decoder'
+import { decodeStorageDiff } from './decoder.js'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { template } from 'lodash'
-import path from 'node:path'
+import _ from 'lodash'
 
 export const generateHtmlDiff = async (block: Block, diff: [HexString, HexString | null][]) => {
   const { oldState, delta } = await decodeStorageDiff(block, diff)
-  const htmlTemplate = readFileSync(path.join(__dirname, '../../template/diff.html'), 'utf-8')
-  return template(htmlTemplate)({ left: JSON.stringify(oldState), delta: JSON.stringify(delta) })
+  const htmlTemplate = readFileSync(new URL('template/diff.html', import.meta.url), 'utf-8')
+  return _.template(htmlTemplate)({ left: JSON.stringify(oldState), delta: JSON.stringify(delta) })
 }
 
 export const generateHtmlDiffPreviewFile = async (

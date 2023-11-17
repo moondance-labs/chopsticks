@@ -1,10 +1,10 @@
-import { DataSource } from 'typeorm'
+import { HexString } from '@polkadot/util/types'
 import _ from 'lodash'
 
-import { Api } from '../api'
-import { KeyValuePair } from '../db/entities'
-import { defaultLogger } from '../logger'
-import KeyCache from '../utils/key-cache'
+import { Api } from '../api.js'
+import { Database } from '../database.js'
+import { defaultLogger } from '../logger.js'
+import KeyCache, { PREFIX_LENGTH } from '../utils/key-cache.js'
 
 const logger = defaultLogger.child({ name: 'layer' })
 
@@ -18,36 +18,46 @@ export const enum StorageValueKind {
 export type StorageValue = string | StorageValueKind | undefined
 
 export interface StorageLayerProvider {
+  /**
+   * Get the value of a storage key.
+   */
   get(key: string, cache: boolean): Promise<StorageValue>
+  /**
+   * Fold the storage layer into another layer.
+   */
   foldInto(into: StorageLayer): Promise<StorageLayerProvider | undefined>
+  /**
+   * Fold the storage layer into the parent if it exists.
+   */
   fold(): Promise<void>
-
+  /**
+   * Get paged storage keys.
+   */
   getKeysPaged(prefix: string, pageSize: number, startKey: string): Promise<string[]>
 }
 
 export class RemoteStorageLayer implements StorageLayerProvider {
   readonly #api: Api
   readonly #at: string
-  readonly #db: DataSource | undefined
+  readonly #db: Database | undefined
   readonly #keyCache = new KeyCache()
 
-  constructor(api: Api, at: string, db: DataSource | undefined) {
+  constructor(api: Api, at: string, db: Database | undefined) {
     this.#api = api
     this.#at = at
     this.#db = db
   }
 
-  async get(key: string): Promise<StorageValue> {
-    const keyValuePair = this.#db?.getRepository(KeyValuePair)
+  async get(key: string, _cache: boolean): Promise<StorageValue> {
     if (this.#db) {
-      const res = await keyValuePair?.findOne({ where: { key, blockHash: this.#at } })
+      const res = await this.#db.queryStorage(this.#at as HexString, key as HexString)
       if (res) {
         return res.value ?? undefined
       }
     }
     logger.trace({ at: this.#at, key }, 'RemoteStorageLayer get')
     const data = await this.#api.getStorage(key, this.#at)
-    keyValuePair?.upsert({ key, blockHash: this.#at, value: data }, ['key', 'blockHash'])
+    this.#db?.saveStorage(this.#at as HexString, key as HexString, data)
     return data ?? undefined
   }
 
@@ -60,7 +70,7 @@ export class RemoteStorageLayer implements StorageLayerProvider {
     if (pageSize > BATCH_SIZE) throw new Error(`pageSize must be less or equal to ${BATCH_SIZE}`)
     logger.trace({ at: this.#at, prefix, pageSize, startKey }, 'RemoteStorageLayer getKeysPaged')
     // can't handle keyCache without prefix
-    if (prefix.length < 66) {
+    if (prefix.length < PREFIX_LENGTH || startKey.length < PREFIX_LENGTH) {
       return this.#api.getKeysPaged(prefix, pageSize, startKey, this.#at)
     }
 
@@ -97,7 +107,7 @@ export class RemoteStorageLayer implements StorageLayerProvider {
 }
 
 export class StorageLayer implements StorageLayerProvider {
-  readonly #store: Record<string, StorageValue | Promise<StorageValue>> = {}
+  readonly #store: Map<string, StorageValue | Promise<StorageValue>> = new Map()
   readonly #keys: string[] = []
   readonly #deletedPrefix: string[] = []
   #parent?: StorageLayerProvider
@@ -124,18 +134,18 @@ export class StorageLayer implements StorageLayerProvider {
   }
 
   async get(key: string, cache: boolean): Promise<StorageValue | undefined> {
-    if (key in this.#store) {
-      return this.#store[key]
+    if (this.#store.has(key)) {
+      return this.#store.get(key)
     }
 
-    if (this.#deletedPrefix.some((prefix) => key.startsWith(prefix))) {
+    if (this.#deletedPrefix.some((dp) => key.startsWith(dp))) {
       return StorageValueKind.Deleted
     }
 
     if (this.#parent) {
       const val = this.#parent.get(key, false)
       if (cache) {
-        this.#store[key] = val
+        this.#store.set(key, val)
       }
       return val
     }
@@ -146,24 +156,24 @@ export class StorageLayer implements StorageLayerProvider {
   set(key: string, value: StorageValue): void {
     switch (value) {
       case StorageValueKind.Deleted:
-        this.#store[key] = value
+        this.#store.set(key, StorageValueKind.Deleted)
         this.#removeKey(key)
         break
       case StorageValueKind.DeletedPrefix:
         this.#deletedPrefix.push(key)
         for (const k of this.#keys) {
           if (k.startsWith(key)) {
-            this.#store[k] = StorageValueKind.Deleted
+            this.#store.set(k, StorageValueKind.Deleted)
             this.#removeKey(k)
           }
         }
         break
       case undefined:
-        delete this.#store[key]
+        this.#store.delete(key)
         this.#removeKey(key)
         break
       default:
-        this.#store[key] = value
+        this.#store.set(key, value)
         this.#addKey(key)
         break
     }
@@ -185,9 +195,8 @@ export class StorageLayer implements StorageLayerProvider {
       into.set(deletedPrefix, StorageValueKind.DeletedPrefix)
     }
 
-    for (const key of this.#keys) {
-      const value = await this.#store[key]
-      into.set(key, value)
+    for (const [key, value] of this.#store) {
+      into.set(key, await value)
     }
 
     return newParent
@@ -200,10 +209,13 @@ export class StorageLayer implements StorageLayerProvider {
   }
 
   async getKeysPaged(prefix: string, pageSize: number, startKey: string): Promise<string[]> {
-    if (!this.#deletedPrefix.some((prefix) => startKey.startsWith(prefix))) {
+    if (!this.#deletedPrefix.some((dp) => startKey.startsWith(dp))) {
       const remote = (await this.#parent?.getKeysPaged(prefix, pageSize, startKey)) ?? []
       for (const key of remote) {
-        if (this.#deletedPrefix.some((prefix) => key.startsWith(prefix))) {
+        if (this.#store.get(key) === StorageValueKind.Deleted) {
+          continue
+        }
+        if (this.#deletedPrefix.some((dp) => key.startsWith(dp))) {
           continue
         }
         this.#addKey(key)
@@ -226,8 +238,11 @@ export class StorageLayer implements StorageLayerProvider {
     return res
   }
 
+  /**
+   * Merge the storage layer into the given object, can be used to get sotrage diff.
+   */
   async mergeInto(into: Record<string, string | null>) {
-    for (const [key, maybeValue] of Object.entries(this.#store)) {
+    for (const [key, maybeValue] of this.#store) {
       const value = await maybeValue
       if (value === StorageValueKind.Deleted) {
         into[key] = null

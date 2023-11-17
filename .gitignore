@@ -122,6 +122,9 @@ dist
 *.sqlite
 *.sqlite-journal
 *.wasm
+*.db
+*.sqlite-shm
+*.sqlite-wal
 
 .DS_store
 
@@ -129,3 +132,9 @@ preview/
 
 lib
 .parcel-cache
+
+# docs src output folder
+docs-src
+
+# vitepress cache
+.vitepress/cache

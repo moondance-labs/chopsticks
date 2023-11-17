@@ -1,23 +1,24 @@
-import { AbridgedHrmpChannel, HrmpChannelId } from '@polkadot/types/interfaces'
+import { AbridgedHrmpChannel, HrmpChannelId, Slot } from '@polkadot/types/interfaces'
 import { GenericExtrinsic } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
-import { hexToU8a, u8aConcat } from '@polkadot/util'
+import { hexToU8a, u8aConcat, u8aToHex } from '@polkadot/util'
 import _ from 'lodash'
 
-import { Block } from '../../block'
-import { BuildBlockParams, DownwardMessage, HorizontalMessage } from '../../txpool'
-import { CreateInherents } from '..'
+import { Block } from '../../block.js'
+import { BuildBlockParams, DownwardMessage, HorizontalMessage } from '../../txpool.js'
+import { CreateInherents } from '../index.js'
 import {
   WELL_KNOWN_KEYS,
   dmqMqcHead,
   hrmpChannels,
   hrmpEgressChannelIndex,
   hrmpIngressChannelIndex,
+  paraHead,
   upgradeGoAheadSignal,
-} from '../../../utils/proof'
+} from '../../../utils/proof.js'
 import { blake2AsHex, blake2AsU8a } from '@polkadot/util-crypto'
-import { compactHex, getParaId } from '../../../utils'
-import { createProof, decodeProof } from '../../../executor'
+import { compactHex, getParaId } from '../../../utils/index.js'
+import { createProof, decodeProof } from '../../../wasm-executor/index.js'
 
 const MOCK_VALIDATION_DATA = {
   validationData: {
@@ -101,10 +102,21 @@ export class SetValidationData implements CreateInherents {
       )
 
       for (const key of Object.values(WELL_KNOWN_KEYS)) {
-        newEntries.push([key, decoded[key]])
+        if (key === WELL_KNOWN_KEYS.CURRENT_SLOT) {
+          // increment current slot
+          const currentSlot = meta.registry.createType<Slot>('Slot', hexToU8a(decoded[key])).toNumber()
+          const newSlot = meta.registry.createType<Slot>('Slot', currentSlot + 2)
+          newEntries.push([key, u8aToHex(newSlot.toU8a())])
+        } else {
+          newEntries.push([key, decoded[key]])
+        }
       }
       newEntries.push([hrmpIngressChannelIndexKey, decoded[hrmpIngressChannelIndexKey]])
       newEntries.push([hrmpEgressChannelIndexKey, decoded[hrmpEgressChannelIndexKey]])
+
+      // inject paraHead
+      const headData = meta.registry.createType('HeadData', (await parent.header).toHex())
+      newEntries.push([paraHead(paraId), u8aToHex(headData.toU8a())])
 
       // inject downward messages
       let dmqMqcHeadHash = decoded[dmqMqcHeadKey]
@@ -165,7 +177,10 @@ export class SetValidationData implements CreateInherents {
           .toJSON()
         const paraMessages: HorizontalMessage[] = []
 
-        for (const { data, sentAt } of messages) {
+        for (const { data, sentAt: _unused } of messages) {
+          // fake relaychain sentAt to make validationData think this msg was sent at previous block
+          const sentAt = extrinsic.validationData.relayParentNumber + 1
+
           // calculate new hash
           const bytes = meta.registry.createType('Bytes', data)
           abridgedHrmp.mqcHead = blake2AsHex(

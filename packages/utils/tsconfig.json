@@ -1,0 +1,10 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "src",
+		"declarationDir": "dist/types"
+	},
+	"include": ["src/**/*"],
+	"exclude": ["src/**/*.test.ts"],
+	"references": [{ "path": "../chopsticks/tsconfig.json" }]
+}

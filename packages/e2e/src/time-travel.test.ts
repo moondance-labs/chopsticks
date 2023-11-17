@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getCurrentTimestamp, getSlotDuration, timeTravel } from '@tanssi/chopsticks-core/utils/time-travel'
 
-import networks from './networks'
+import networks from './networks.js'
 
 describe.each(['polkadot', 'acala'])('Can time-travel on %s', async (name) => {
   const { chain, ws } = await networks[name as keyof typeof networks]()
@@ -11,11 +11,11 @@ describe.each(['polkadot', 'acala'])('Can time-travel on %s', async (name) => {
 
     await timeTravel(chain, timestamp)
 
-    expect(await getCurrentTimestamp(chain)).eq(timestamp)
+    expect(await getCurrentTimestamp(chain)).eq(BigInt(timestamp))
 
     // can build block successfully
     await ws.send('dev_newBlock', [])
 
-    expect(await getCurrentTimestamp(chain)).eq(timestamp + (await getSlotDuration(chain)))
+    expect(await getCurrentTimestamp(chain)).eq(BigInt(timestamp + (await getSlotDuration(chain))))
   })
 })

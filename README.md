@@ -17,6 +17,12 @@ Run node using config file
 npx @acala-network/chopsticks@latest -c acala
 ```
 
+## Web testing
+
+Run Chopsticks in browser? Now you can turn a mainnet into a devnet and play with it directly in your browser!
+
+An example is available at [acalanetwork.github.io/chopsticks](https://acalanetwork.github.io/chopsticks/), and the corresponding code can be found in [web-test](packages/web-test).
+
 ## Environment Variables
 
 - `PORT`: Set port for Chopsticks to listen on, default is `8000`
@@ -125,6 +131,14 @@ npx @acala-network/chopsticks@latest dry-run --config=configs/mandala.yml --prei
           }
         ]
       ]
+    },
+    "Whitelist": {
+      "WhitelistedCall": [
+        [
+          ["0x3146d2141cdb95de80488d6cecbb5d7577dd59069efc366cb1be7fe64f02e62c"],
+          "0x" // please use 0x for null values
+        ],
+      ]
     }
   }
   ```
@@ -150,4 +164,13 @@ To learn more, see https://www.npmjs.com/package/global-agent?activeTab=readme
 
 External documentation on Chopsticks can be found at the following links:
 
+- [Chopsticks types documentation](https://acalanetwork.github.io/chopsticks/docs)
 - [Moonbeam documentation site](https://docs.moonbeam.network/builders/build/substrate-api/chopsticks/)
+
+## Plugins
+
+Chopsticks is designed to be extensible. You can write your own plugin to extend Chopsticks' functionality.
+
+There are 2 types of plugins: `cli` and `rpc`. `cli` plugins are used to extend Chopsticks' CLI, while `rpc` plugins are used to extend Chopsticks' RPC.
+
+To create a new plugin, you could check out the [run-block plugin](packages/chopsticks/src/plugins/run-block/) as an example.

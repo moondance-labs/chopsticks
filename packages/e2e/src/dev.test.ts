@@ -1,16 +1,15 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { u8aToHex } from '@polkadot/util'
 
-import { expectJson, testingPairs } from './helper'
-import networks from './networks'
+import { expectJson, testingPairs } from './helper.js'
+import networks from './networks.js'
 
 describe('dev rpc', async () => {
   const { alice, bob } = testingPairs()
 
-  const acala = await networks.acala()
-  const { api, dev, ws } = acala
+  const { api, chain, dev, ws, teardown } = await networks.acala()
 
-  await acala.dev.setStorage({
+  await dev.setStorage({
     System: {
       Account: [[[alice.address], { data: { free: 10 * 1e12 } }]],
     },
@@ -20,7 +19,7 @@ describe('dev rpc', async () => {
   })
 
   afterAll(async () => {
-    await acala.teardown()
+    await teardown()
   })
 
   it('setStorage', async () => {
@@ -98,8 +97,8 @@ describe('dev rpc', async () => {
   })
 
   it('setHead', async () => {
-    const blockNumber = acala.chain.head.number
-    const hash = acala.chain.head.hash
+    const blockNumber = chain.head.number
+    const hash = chain.head.hash
     await dev.newBlock({ count: 3 })
     await dev.setHead(hash)
     expect((await api.rpc.chain.getBlockHash()).toHex()).toBe(hash)

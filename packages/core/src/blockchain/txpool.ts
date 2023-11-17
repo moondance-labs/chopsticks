@@ -3,20 +3,23 @@ import { GenericExtrinsic } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
 import _ from 'lodash'
 
-import { Blockchain } from '.'
-import { Deferred, defer } from '../utils'
-import { InherentProvider } from './inherent'
-import { buildBlock } from './block-builder'
-import { defaultLogger, truncate } from '../logger'
+import { Blockchain } from './index.js'
+import { Deferred, defer } from '../utils/index.js'
+import { InherentProvider } from './inherent/index.js'
+import { buildBlock } from './block-builder.js'
+import { defaultLogger, truncate } from '../logger.js'
 
 const logger = defaultLogger.child({ name: 'txpool' })
 
 export const APPLY_EXTRINSIC_ERROR = 'TxPool::ApplyExtrinsicError'
 
 export enum BuildBlockMode {
-  Batch, // one block per batch, default
-  Instant, // one block per tx
-  Manual, // only build when triggered
+  /** One block per batch (default) */
+  Batch,
+  /** One block per tx */
+  Instant,
+  /** Only build when triggered */
+  Manual,
 }
 
 export interface DownwardMessage {
@@ -34,6 +37,7 @@ export interface BuildBlockParams {
   upwardMessages: Record<number, HexString[]>
   horizontalMessages: Record<number, HorizontalMessage[]>
   transactions: HexString[]
+  unsafeBlockHeight?: number
 }
 
 export class TxPool {
@@ -171,6 +175,7 @@ export class TxPool {
     const upwardMessages = params?.upwardMessages || { ...this.#ump }
     const downwardMessages = params?.downwardMessages || this.#dmp.splice(0)
     const horizontalMessages = params?.horizontalMessages || { ...this.#hrmp }
+    const unsafeBlockHeight = params?.unsafeBlockHeight
     if (!params?.upwardMessages) {
       for (const id of Object.keys(this.#ump)) {
         delete this.#ump[id]
@@ -186,6 +191,7 @@ export class TxPool {
       upwardMessages,
       downwardMessages,
       horizontalMessages,
+      unsafeBlockHeight,
     })
   }
 
@@ -228,9 +234,27 @@ export class TxPool {
       inherents,
       params.transactions,
       params.upwardMessages,
-      (extrinsic, error) => {
-        this.event.emit(APPLY_EXTRINSIC_ERROR, [extrinsic, error])
+      {
+        onApplyExtrinsicError: (extrinsic, error) => {
+          this.event.emit(APPLY_EXTRINSIC_ERROR, [extrinsic, error])
+        },
+        onPhaseApplied:
+          logger.level.toLowerCase() === 'trace'
+            ? (phase, resp) => {
+                switch (phase) {
+                  case 'initialize':
+                    logger.trace(truncate(resp.storageDiff), 'Initialize block')
+                    break
+                  case 'finalize':
+                    logger.trace(truncate(resp.storageDiff), 'Finalize block')
+                    break
+                  default:
+                    logger.trace(truncate(resp.storageDiff), `Apply extrinsic ${phase}`)
+                }
+              }
+            : undefined,
       },
+      params.unsafeBlockHeight,
     )
     for (const extrinsic of pendingExtrinsics) {
       this.#pool.push({ extrinsic, signer: await this.#getSigner(extrinsic) })
