@@ -13,12 +13,12 @@ import {
   InherentProviders,
   ParaInherentEnter,
   SetBabeRandomness,
-  SetLatestAuthorData,
   SetNimbusAuthorInherent,
   SetTimestamp,
   SetValidationData,
 } from './blockchain/inherent/index.js'
 import { defaultLogger } from './logger.js'
+import { SetLatestAuthorData } from './blockchain/inherent/parachain/latest-author.js'
 
 export type SetupOptions = {
   endpoint?: string

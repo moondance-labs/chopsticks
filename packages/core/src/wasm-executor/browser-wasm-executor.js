@@ -1,5 +1,5 @@
 import * as Comlink from 'comlink'
-import * as pkg from '@acala-network/chopsticks-executor'
+import * as pkg from '@tanssi/chopsticks-executor'
 
 const getRuntimeVersion = async (code) => {
   return pkg.get_runtime_version(code)

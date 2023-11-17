@@ -1,7 +1,7 @@
 import { Config } from './schema/index.js'
 import { createServer } from './server.js'
 import { handler } from './rpc/index.js'
-import { logger } from '@acala-network/chopsticks-core'
+import { logger } from '@tanssi/chopsticks-core'
 import { setupContext } from './context.js'
 
 export const setupWithServer = async (argv: Config) => {

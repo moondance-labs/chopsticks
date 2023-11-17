@@ -1,7 +1,7 @@
 {
-	"name": "@acala-network/chopsticks-utils",
+	"name": "@tanssi/chopsticks-utils",
 	"version": "0.9.2",
-	"author": "Acala Developers <hello@acala.network>",
+	"author": "Moondance Labs",
 	"license": "Apache-2.0",
 	"type": "module",
 	"scripts": {
@@ -12,7 +12,7 @@
 		"build:types": "tsc -p tsconfig.json --emitDeclarationOnly --outDir dist/types"
 	},
 	"dependencies": {
-		"@acala-network/chopsticks": "workspace:*"
+		"@tanssi/chopsticks": "workspace:*"
 	},
 	"devDependencies": {
 		"@swc/cli": "0.1.62",

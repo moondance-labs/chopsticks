@@ -13,8 +13,6 @@
 		"docs:prep": "typedoc"
 	},
 	"dependencies": {
-		"@tanssi/chopsticks-executor": "workspace:*",
-		"axios": "^1.4.0",
 		"@polkadot/api": "^10.10.1",
 		"@polkadot/rpc-provider": "^10.10.1",
 		"@polkadot/types": "^10.10.1",
@@ -22,6 +20,8 @@
 		"@polkadot/types-known": "^10.10.1",
 		"@polkadot/util": "^12.5.1",
 		"@polkadot/util-crypto": "^12.5.1",
+		"@tanssi/chopsticks-executor": "workspace:*",
+		"axios": "^1.4.0",
 		"comlink": "^4.4.1",
 		"eventemitter3": "^5.0.1",
 		"lodash": "^4.17.21",

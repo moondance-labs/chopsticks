@@ -1,9 +1,9 @@
 import { assert, describe, expect, it } from 'vitest'
-import { connectUpward } from '@acala-network/chopsticks-core/xcm/upward.js'
+import { connectUpward } from '@tanssi/chopsticks-core/xcm/upward.js'
 import { matchSnapshot } from './helper.js'
-import { matchSystemEvents, testingPairs } from '@acala-network/chopsticks-testing'
+import { matchSystemEvents, testingPairs } from '@tanssi/chopsticks-testing'
 import { resolve } from 'node:path'
-import { setStorage } from '@acala-network/chopsticks'
+import { setStorage } from '@tanssi/chopsticks'
 import { tmpdir } from 'node:os'
 import networks from './networks.js'
 

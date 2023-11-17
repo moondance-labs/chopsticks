@@ -1,4 +1,4 @@
-import { BlockEntry, KeyValueEntry } from '@acala-network/chopsticks-core'
+import { BlockEntry, KeyValueEntry } from '@tanssi/chopsticks-core'
 import { EntitySchema } from 'typeorm'
 
 export const KeyValuePair = new EntitySchema<KeyValueEntry>({

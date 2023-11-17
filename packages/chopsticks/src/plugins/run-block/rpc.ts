@@ -13,7 +13,7 @@ import {
   decodeKeyValue,
   runTask,
   taskHandler,
-} from '@acala-network/chopsticks-core'
+} from '@tanssi/chopsticks-core'
 import { zHash, zHex } from '../../schema/index.js'
 
 const schema = z.object({

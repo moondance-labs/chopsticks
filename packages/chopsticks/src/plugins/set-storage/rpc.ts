@@ -1,4 +1,4 @@
-import { Context, ResponseError, StorageValues, setStorage } from '@acala-network/chopsticks-core'
+import { Context, ResponseError, StorageValues, setStorage } from '@tanssi/chopsticks-core'
 import { HexString } from '@polkadot/util/types'
 
 import { defaultLogger } from '../../logger.js'

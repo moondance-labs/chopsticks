@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { Context, ResponseError } from '@acala-network/chopsticks-core'
+import { Context, ResponseError } from '@tanssi/chopsticks-core'
 import { decodeStorageDiff } from '../../utils/decoder.js'
 import { generateHtmlDiff } from '../../utils/generate-html-diff.js'
 import { zHash, zHex } from '../../schema/index.js'

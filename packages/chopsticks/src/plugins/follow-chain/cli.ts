@@ -1,4 +1,4 @@
-import { Block, defaultLogger, runTask, taskHandler } from '@acala-network/chopsticks-core'
+import { Block, defaultLogger, runTask, taskHandler } from '@tanssi/chopsticks-core'
 import { Header } from '@polkadot/types/interfaces'
 import { HexString } from '@polkadot/util/types'
 import _ from 'lodash'

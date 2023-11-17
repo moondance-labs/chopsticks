@@ -1,4 +1,4 @@
-import { Block, Context, ResponseError } from '@acala-network/chopsticks-core'
+import { Block, Context, ResponseError } from '@tanssi/chopsticks-core'
 import { z } from 'zod'
 
 import { zHash } from '../../schema/index.js'

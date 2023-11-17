@@ -1,4 +1,4 @@
-import { Context, ResponseError } from '@acala-network/chopsticks-core'
+import { Context, ResponseError } from '@tanssi/chopsticks-core'
 import { z } from 'zod'
 
 import { defaultLogger } from '../../logger.js'

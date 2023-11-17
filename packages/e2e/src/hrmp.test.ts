@@ -1,7 +1,7 @@
 import { describe, it } from 'vitest'
 
-import { HorizontalMessage } from '@acala-network/chopsticks-core/blockchain/txpool.js'
-import { matchSystemEvents, setupContext } from '@acala-network/chopsticks-testing'
+import { HorizontalMessage } from '@tanssi/chopsticks-core/blockchain/txpool.js'
+import { matchSystemEvents, setupContext } from '@tanssi/chopsticks-testing'
 
 const statemineHRMP: Record<number, HorizontalMessage[]> = {
   2000: [

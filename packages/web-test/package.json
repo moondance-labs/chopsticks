@@ -12,12 +12,12 @@
 		"test": "playwright test"
 	},
 	"devDependencies": {
-		"@tanssi/chopsticks-core": "workspace:*",
-		"@tanssi/chopsticks-db": "workspace:*",
 		"@emotion/react": "^11.11.1",
 		"@emotion/styled": "^11.11.0",
 		"@mui/material": "^5.14.17",
 		"@playwright/test": "^1.39.0",
+		"@tanssi/chopsticks-core": "workspace:*",
+		"@tanssi/chopsticks-db": "workspace:*",
 		"@types/react": "^18.2.37",
 		"@types/react-dom": "^18.2.15",
 		"@vitejs/plugin-react": "^4.1.1",

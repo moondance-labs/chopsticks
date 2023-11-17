@@ -12,13 +12,13 @@ import {
 	Typography,
 } from '@mui/material'
 import { ApiPromise } from '@polkadot/api'
-import { ChopsticksProvider, setStorage, setup } from '@acala-network/chopsticks-core'
+import { ChopsticksProvider, setStorage, setup } from '@tanssi/chopsticks-core'
 import { HexString } from '@polkadot/util/types'
-import { IdbDatabase } from '@acala-network/chopsticks-db/browser.js'
+import { IdbDatabase } from '@tanssi/chopsticks-db/browser.js'
 import { createTestPairs } from '@polkadot/keyring'
 import { styled } from '@mui/system'
 import { useEffect, useState } from 'react'
-import type { SetupOptions } from '@acala-network/chopsticks-core'
+import type { SetupOptions } from '@tanssi/chopsticks-core'
 
 const { alice, bob } = createTestPairs()
 

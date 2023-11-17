@@ -1,4 +1,4 @@
-import { BlockEntry, Database, KeyValueEntry } from '@acala-network/chopsticks-core'
+import { BlockEntry, Database, KeyValueEntry } from '@tanssi/chopsticks-core'
 import { DBSchema, IDBPDatabase, openDB } from 'idb'
 
 interface Schema extends DBSchema {

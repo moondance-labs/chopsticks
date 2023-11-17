@@ -12,10 +12,10 @@
 		"build:types": "tsc -p tsconfig.json --emitDeclarationOnly --outDir dist/types"
 	},
 	"dependencies": {
-		"@tanssi/chopsticks": "workspace:*"
-		"@tanssi/chopsticks-utils": "workspace:*",
 		"@polkadot/api": "^10.10.1",
-		"@polkadot/types": "^10.10.1"
+		"@polkadot/types": "^10.10.1",
+		"@tanssi/chopsticks": "workspace:*",
+		"@tanssi/chopsticks-utils": "workspace:*"
 	},
 	"peerDependencies": {
 		"vitest": "^0.34.0"

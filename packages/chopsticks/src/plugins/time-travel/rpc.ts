@@ -1,4 +1,4 @@
-import { Context, ResponseError, timeTravel } from '@acala-network/chopsticks-core'
+import { Context, ResponseError, timeTravel } from '@tanssi/chopsticks-core'
 
 /**
  * Travel to a specific time.

@@ -16,6 +16,6 @@ export type {
   Context,
   SubscriptionManager,
   Handler,
-} from '@acala-network/chopsticks-core'
-export * from '@acala-network/chopsticks-core/rpc/substrate/index.js'
+} from '@tanssi/chopsticks-core'
+export * from '@tanssi/chopsticks-core/rpc/substrate/index.js'
 export * from './plugins/types.js'

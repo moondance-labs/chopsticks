@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs'
 import _ from 'lodash'
 import type { Argv } from 'yargs'
 
-import { runTask, taskHandler } from '@acala-network/chopsticks-core'
+import { runTask, taskHandler } from '@tanssi/chopsticks-core'
 
 import { Config } from '../../schema/index.js'
 import { defaultOptions, mockOptions } from '../../cli-options.js'
