@@ -5,15 +5,7 @@ import { u8aToHex } from '@polkadot/util'
 import { z } from 'zod'
 import _ from 'lodash'
 
-import {
-  Block,
-  Context,
-  RuntimeLog,
-  compactHex,
-  decodeKeyValue,
-  runTask,
-  taskHandler,
-} from '@tanssi/chopsticks-core'
+import { Block, Context, RuntimeLog, compactHex, decodeKeyValue, runTask, taskHandler } from '@tanssi/chopsticks-core'
 import { zHash, zHex } from '../../schema/index.js'
 
 const schema = z.object({

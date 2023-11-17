@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest'
-import { decodeKey, decodeKeyValue,toStorageObject } from '@tanssi/chopsticks-core/utils/decoder'
+import { decodeKey, decodeKeyValue, toStorageObject } from '@tanssi/chopsticks-core/utils/decoder.js'
 
 import networks from './networks.js'
 

@@ -1,12 +1,12 @@
 import * as Comlink from 'comlink'
-import { HexString } from '@polkadot/util/types'
-import { hexToString, hexToU8a, u8aToBn } from '@polkadot/util'
-import { randomAsHex } from '@polkadot/util-crypto'
-import _ from 'lodash'
 import { Block } from '../blockchain/block.js'
+import { HexString } from '@polkadot/util/types'
 import { PREFIX_LENGTH } from '../utils/key-cache.js'
 import { defaultLogger, truncate } from '../logger.js'
+import { hexToString, hexToU8a, u8aToBn } from '@polkadot/util'
+import { randomAsHex } from '@polkadot/util-crypto'
 import { stripChildPrefix } from '../utils/index.js'
+import _ from 'lodash'
 import type { JsCallback } from '@tanssi/chopsticks-executor'
 export { JsCallback }
 

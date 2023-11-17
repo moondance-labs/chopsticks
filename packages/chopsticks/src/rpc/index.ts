@@ -1,11 +1,4 @@
-import {
-  Context,
-  Handlers,
-  ResponseError,
-  SubscriptionManager,
-  logger,
-  substrate,
-} from '@tanssi/chopsticks-core'
+import { Context, Handlers, ResponseError, SubscriptionManager, logger, substrate } from '@tanssi/chopsticks-core'
 
 import { loadRpcPlugin, rpcPluginMethods } from '../plugins/index.js'
 

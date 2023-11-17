@@ -1,11 +1,8 @@
+import { Api } from '@tanssi/chopsticks'
 import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api'
+import { Blockchain, BuildBlockMode, StorageValues } from '@tanssi/chopsticks-core'
 import { Codec, RegisteredTypes } from '@polkadot/types/types'
 import { HexString } from '@polkadot/util/types'
-import { ProviderInterface } from '@polkadot/rpc-provider/types'
-import { beforeAll, beforeEach, expect, vi } from 'vitest'
-
-import { Api } from '@tanssi/chopsticks'
-import { Blockchain, BuildBlockMode, StorageValues } from '@tanssi/chopsticks-core'
 import {
   InherentProviders,
   ParaInherentEnter,
@@ -14,13 +11,16 @@ import {
   SetTimestamp,
   SetValidationData,
 } from '@tanssi/chopsticks-core/blockchain/inherent/index.js'
+import { ProviderInterface } from '@polkadot/rpc-provider/types'
+import { SetLatestAuthorData } from '@tanssi/chopsticks-core/blockchain/inherent/parachain/latest-author.js'
 import { SqliteDatabase } from '@tanssi/chopsticks-db'
+import { beforeAll, beforeEach, expect, vi } from 'vitest'
 import { createServer } from '@tanssi/chopsticks/server.js'
 import { defer } from '@tanssi/chopsticks-core/utils/index.js'
 import { genesisFromUrl } from '@tanssi/chopsticks/context.js'
 import { handler } from '@tanssi/chopsticks/rpc/index.js'
 
-export { expectJson, expectHex, testingPairs } from '@tanssi/chopsticks-testing'
+export { expectHex, expectJson, testingPairs } from '@tanssi/chopsticks-testing'
 
 export type SetupOption = {
   endpoint?: string

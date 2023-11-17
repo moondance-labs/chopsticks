@@ -1,10 +1,10 @@
 import { beforeEach, describe, it } from 'vitest'
 
-import { DownwardMessage } from '@tanssi/chopsticks-core/blockchain/txpool'
-import { connectDownward } from '@tanssi/chopsticks-core/xcm/downward'
-import { connectUpward } from '@tanssi/chopsticks-core/xcm/upward'
+import { DownwardMessage } from '@tanssi/chopsticks-core/blockchain/txpool.js'
+import { connectDownward } from '@tanssi/chopsticks-core/xcm/downward.js'
+import { connectUpward } from '@tanssi/chopsticks-core/xcm/upward.js'
 import { matchSystemEvents, testingPairs } from '@tanssi/chopsticks-testing'
-import { setStorage } from '@tanssi/chopsticks-core/utils/set-storage'
+import { setStorage } from '@tanssi/chopsticks-core/utils/set-storage.js'
 
 import { matchSnapshot } from './helper.js'
 import networks, { Network } from './networks.js'

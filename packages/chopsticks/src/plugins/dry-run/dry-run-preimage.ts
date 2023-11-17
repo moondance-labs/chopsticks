@@ -1,10 +1,10 @@
+import { Config } from '../../schema/index.js'
 import { HexString } from '@polkadot/util/types'
 import { blake2AsHex } from '@polkadot/util-crypto'
-import { hexToU8a } from '@polkadot/util'
-import { newHeader, runTask, setStorage, taskHandler } from '@tanssi/chopsticks-core'
-import { Config } from '../../schema/index.js'
 import { defaultLogger } from '../../logger.js'
 import { generateHtmlDiffPreviewFile } from '../../utils/generate-html-diff.js'
+import { hexToU8a } from '@polkadot/util'
+import { newHeader, runTask, setStorage, taskHandler } from '@tanssi/chopsticks-core'
 import { openHtml } from '../../utils/open-html.js'
 import { setupContext } from '../../context.js'
 

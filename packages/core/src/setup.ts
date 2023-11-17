@@ -1,14 +1,11 @@
 import '@polkadot/types-codec'
-import { HexString } from '@polkadot/util/types'
-import { HttpProvider, WsProvider } from '@polkadot/rpc-provider'
-import { ProviderInterface } from '@polkadot/rpc-provider/types'
-import { RegisteredTypes } from '@polkadot/types/types'
-
 import { Api } from './api.js'
 import { Blockchain } from './blockchain/index.js'
 import { BuildBlockMode } from './blockchain/txpool.js'
 import { Database } from './database.js'
 import { GenesisProvider } from './genesis-provider.js'
+import { HexString } from '@polkadot/util/types'
+import { HttpProvider, WsProvider } from '@polkadot/rpc-provider'
 import {
   InherentProviders,
   ParaInherentEnter,
@@ -17,8 +14,10 @@ import {
   SetTimestamp,
   SetValidationData,
 } from './blockchain/inherent/index.js'
-import { defaultLogger } from './logger.js'
+import { ProviderInterface } from '@polkadot/rpc-provider/types'
+import { RegisteredTypes } from '@polkadot/types/types'
 import { SetLatestAuthorData } from './blockchain/inherent/parachain/latest-author.js'
+import { defaultLogger } from './logger.js'
 
 export type SetupOptions = {
   endpoint?: string

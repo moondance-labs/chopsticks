@@ -6,13 +6,13 @@ import {
   RawBabePreDigest,
   TransactionValidityError,
 } from '@polkadot/types/interfaces'
-import { Blockchain } from './index.js'
-import { compactAddLength, hexToU8a, stringToHex, u8aConcat, u8aToBigInt } from '@polkadot/util'
 import { Block } from './block.js'
+import { Blockchain } from './index.js'
 import { GenericExtrinsic } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
 import { StorageLayer, StorageValueKind } from './storage-layer.js'
 import { TaskCallResponse } from '../wasm-executor/index.js'
+import { compactAddLength, hexToU8a, stringToHex, u8aConcat, u8aToBigInt } from '@polkadot/util'
 import { compactHex } from '../utils/index.js'
 import { defaultLogger, truncate } from '../logger.js'
 import { getCurrentSlot } from '../utils/time-travel.js'
@@ -78,7 +78,7 @@ export const newHeader = async (head: Block, unsafeBlockHeight?: number) => {
   if (
     preRuntimes?.find(({ consensusEngine }) => consensusEngine.isAura) &&
     preRuntimes?.find(({ consensusEngine }) => consensusEngine.isNimbus)
-  ) { 
+  ) {
     const authorities = await getAuthorities(head.chain)
     const auraBlob = preRuntimes?.find((x) => x.consensusEngine.isAura)
     const nimbusBlob = preRuntimes?.find((x) => x.consensusEngine.toString() == 'nmbs')

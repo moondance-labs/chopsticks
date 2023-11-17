@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
-import path from 'path'
 import { api, chain, setupApi } from '../helper.js'
-import { overrideStorage, overrideWasm } from '@tanssi/chopsticks/utils/override'
+import { describe, expect, it } from 'vitest'
+import { overrideStorage, overrideWasm } from '@tanssi/chopsticks/utils/override.js'
+import path from 'path'
 
 setupApi({
   endpoint: 'wss://acala-rpc-1.aca-api.network',

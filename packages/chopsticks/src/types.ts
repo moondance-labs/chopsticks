@@ -10,12 +10,6 @@
  *
  * @packageDocumentation
  */
-export type {
-  ChainProperties,
-  RuntimeVersion,
-  Context,
-  SubscriptionManager,
-  Handler,
-} from '@tanssi/chopsticks-core'
+export type { ChainProperties, RuntimeVersion, Context, SubscriptionManager, Handler } from '@tanssi/chopsticks-core'
 export * from '@tanssi/chopsticks-core/rpc/substrate/index.js'
 export * from './plugins/types.js'
