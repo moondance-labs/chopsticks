@@ -2,28 +2,32 @@
 	"compilerOptions": {
 		"allowSyntheticDefaultImports": true,
 		"esModuleInterop": true,
-		"lib": ["esnext"],
-		"module": "CommonJS",
-		"moduleResolution": "node",
+		"lib": ["esnext", "dom", "dom.iterable"],
+		"isolatedModules": true,
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noImplicitAny": false,
 		"target": "esnext",
-		"skipLibCheck": true,
+		"skipLibCheck": false,
 		"strict": true,
 		"declaration": true,
 		"resolveJsonModule": true,
+		"forceConsistentCasingInFileNames": true,
 		"baseUrl": ".",
 		"composite": true,
 		"paths": {
-			"@tanssi/chopsticks": ["packages/chopsticks/src"],
+			"@tanssi/chopsticks": ["packages/chopsticks/src/index.ts"],
 			"@tanssi/chopsticks/*": ["packages/chopsticks/src/*"],
-			"@tanssi/chopsticks-core": ["packages/core/src"],
+			"@tanssi/chopsticks-core": ["packages/core/src/index.ts"],
 			"@tanssi/chopsticks-core/*": ["packages/core/src/*"],
-			"@tanssi/chopsticks-testing": ["packages/testing/src"],
+			"@tanssi/chopsticks-db": ["packages/db/src/index.ts"],
+			"@tanssi/chopsticks-db/*": ["packages/db/src/*"],
+			"@tanssi/chopsticks-testing": ["packages/testing/src/index.ts"],
 			"@tanssi/chopsticks-testing/*": ["packages/testing/src/*"],
-			"@tanssi/web-test": ["packages/web/src"],
-			"@tanssi/web-test/*": ["packages/web/src/*"]
+			"@tanssi/chopsticks-utils": ["packages/utils/src/index.ts"],
+			"@tanssi/chopsticks-utils/*": ["packages/utils/src/*"]
 		}
 	}
 }

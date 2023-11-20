@@ -1,9 +1,21 @@
-import WebSocket, { AddressInfo, WebSocketServer } from 'ws'
+import { AddressInfo, WebSocket, WebSocketServer } from 'ws'
+import { ResponseError, SubscriptionManager } from '@tanssi/chopsticks-core'
+import { z } from 'zod'
 
-import { ResponseError, SubscriptionManager } from './rpc/shared'
-import { defaultLogger, truncate } from './logger'
+import { defaultLogger, truncate } from './logger.js'
 
 const logger = defaultLogger.child({ name: 'ws' })
+
+const singleRequest = z.object({
+  id: z.number(),
+  jsonrpc: z.literal('2.0'),
+  method: z.string(),
+  params: z.array(z.any()).default([]),
+})
+
+const batchRequest = z.array(singleRequest)
+
+const requestSchema = z.union([singleRequest, batchRequest])
 
 export type Handler = (
   data: { method: string; params: string[] },
@@ -87,36 +99,7 @@ export const createServer = async (handler: Handler, port?: number) => {
       },
     }
 
-    ws.on('close', () => {
-      logger.debug('Connection closed')
-      for (const [subid, onCancel] of Object.entries(subscriptions)) {
-        onCancel(subid)
-      }
-      ws.removeAllListeners()
-    })
-    ws.on('error', () => {
-      logger.debug('Connection error')
-      for (const [subid, onCancel] of Object.entries(subscriptions)) {
-        onCancel(subid)
-      }
-      ws.removeAllListeners()
-    })
-
-    ws.on('message', async (message) => {
-      const req = parseRequest(message.toString())
-      if (!req || req.id == null || req.method == null) {
-        logger.info('Invalid request: %s', message)
-        send({
-          id: null,
-          jsonrpc: '2.0',
-          error: {
-            code: -32600,
-            message: 'Invalid JSON Request',
-          },
-        })
-        return
-      }
-
+    const processRequest = async (req: Zod.infer<typeof singleRequest>) => {
       logger.trace(
         {
           id: req.id,
@@ -133,20 +116,62 @@ export const createServer = async (handler: Handler, port?: number) => {
             method: req.method,
             result: truncate(resp),
           },
-          'Sending response for request',
+          'Response for request',
         )
-        send({
+        return {
           id: req.id,
           jsonrpc: '2.0',
           result: resp ?? null,
-        })
+        }
       } catch (e) {
         logger.info('Error handling request: %s %o', e, (e as Error).stack)
-        send({
+        return {
           id: req.id,
           jsonrpc: '2.0',
           error: e instanceof ResponseError ? e : { code: -32603, message: `Internal ${e}` },
+        }
+      }
+    }
+
+    ws.on('close', () => {
+      logger.debug('Connection closed')
+      for (const [subid, onCancel] of Object.entries(subscriptions)) {
+        onCancel(subid)
+      }
+      ws.removeAllListeners()
+    })
+    ws.on('error', () => {
+      logger.debug('Connection error')
+      for (const [subid, onCancel] of Object.entries(subscriptions)) {
+        onCancel(subid)
+      }
+      ws.removeAllListeners()
+    })
+
+    ws.on('message', async (message) => {
+      const parsed = await requestSchema.safeParseAsync(parseRequest(message.toString()))
+      if (!parsed.success) {
+        logger.info('Invalid request: %s', message)
+        send({
+          id: null,
+          jsonrpc: '2.0',
+          error: {
+            code: -32600,
+            message: 'Invalid JSON Request',
+          },
         })
+        return
+      }
+
+      const { data: req } = parsed
+      if (Array.isArray(req)) {
+        logger.trace({ req }, 'Received batch request')
+        const resp = await Promise.all(req.map(processRequest))
+        send(resp)
+      } else {
+        logger.trace({ req }, 'Received single request')
+        const resp = await processRequest(req)
+        send(resp)
       }
     })
   })

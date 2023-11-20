@@ -1,13 +1,12 @@
+import { Config } from '../../schema/index.js'
 import { HexString } from '@polkadot/util/types'
 import { blake2AsHex } from '@polkadot/util-crypto'
+import { defaultLogger } from '../../logger.js'
+import { generateHtmlDiffPreviewFile } from '../../utils/generate-html-diff.js'
 import { hexToU8a } from '@polkadot/util'
-
-import { Config } from '../../schema'
-import { defaultLogger } from '../../logger'
-import { generateHtmlDiffPreviewFile } from '../../utils/generate-html-diff'
 import { newHeader, runTask, setStorage, taskHandler } from '@tanssi/chopsticks-core'
-import { openHtml } from '../../utils/open-html'
-import { setupContext } from '../../context'
+import { openHtml } from '../../utils/open-html.js'
+import { setupContext } from '../../context.js'
 
 export const dryRunPreimage = async (argv: Config) => {
   const context = await setupContext(argv)
@@ -81,12 +80,8 @@ export const dryRunPreimage = async (argv: Config) => {
     taskHandler(block),
   )
 
-  if (result.Error) {
+  if ('Error' in result) {
     throw new Error(result.Error)
-  }
-
-  for (const logs of result.Call.runtimeLogs) {
-    defaultLogger.info(`RuntimeLogs:\n${logs}`)
   }
 
   const filePath = await generateHtmlDiffPreviewFile(block, result.Call.storageDiff, hash)
@@ -96,7 +91,7 @@ export const dryRunPreimage = async (argv: Config) => {
   }
 
   // if dry-run preimage has extrinsic arguments then dry-run extrinsic
-  // this is usefull to test something after preimage is applied
+  // this is useful to test something after preimage is applied
   if (argv['extrinsic']) {
     await context.chain.newBlock()
     const input = argv['address'] ? { call: argv['extrinsic'], address: argv['address'] } : argv['extrinsic']

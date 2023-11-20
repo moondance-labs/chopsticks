@@ -1,33 +1,51 @@
-import { camelCase } from 'lodash'
+import { Handlers } from '@tanssi/chopsticks-core'
 import { lstatSync, readdirSync } from 'fs'
-import type yargs from 'yargs'
+import _ from 'lodash'
+import type { Argv } from 'yargs'
 
-import { Handlers } from '../rpc/shared'
-import { defaultLogger } from '../logger'
+import { defaultLogger } from '../logger.js'
 
 const logger = defaultLogger.child({ name: 'plugin' })
 
-export const pluginHandlers: Handlers = {}
+export const rpcPluginHandlers: Handlers = {}
 
-const plugins = readdirSync(__dirname).filter((file) => lstatSync(`${__dirname}/${file}`).isDirectory())
+// list of plugins directory
+const plugins = readdirSync(new URL('.', import.meta.url)).filter((file) =>
+  lstatSync(new URL(file, import.meta.url)).isDirectory(),
+)
 
-;(async () => {
-  for (const plugin of plugins) {
-    const { rpc, name } = await import(`./${plugin}`)
-    if (rpc) {
-      const methodName = name || camelCase(plugin)
-      pluginHandlers[`dev_${methodName}`] = rpc
-      logger.debug(`Registered plugin ${plugin} RPC`)
-    }
+// find all rpc methods
+export const rpcPluginMethods = plugins
+  .filter((name) => readdirSync(new URL(name, import.meta.url)).some((file) => file.startsWith('rpc')))
+  .map((name) => `dev_${_.camelCase(name)}`)
+
+export const loadRpcPlugin = async (method: string) => {
+  if (process.env.DISABLE_PLUGINS) {
+    return undefined
   }
-})()
+  if (rpcPluginHandlers[method]) return rpcPluginHandlers[method]
 
-export const pluginExtendCli = async (y: yargs.Argv) => {
+  const plugin = _.snakeCase(method.split('dev_')[1]).replaceAll('_', '-')
+  if (!plugin) return undefined
+
+  const location = new URL(`${plugin}/index.js`, import.meta.url)
+
+  const { rpc } = await import(location.pathname)
+  if (!rpc) return undefined
+
+  rpcPluginHandlers[method] = rpc
+  logger.debug(`Registered plugin ${plugin} RPC`)
+
+  return rpc
+}
+
+export const pluginExtendCli = async (y: Argv) => {
   for (const plugin of plugins) {
-    const { cli } = await import(`./${plugin}`)
+    const location = new URL(`${plugin}/index.js`, import.meta.url)
+    const { cli } = await import(location.pathname)
     if (cli) {
       cli(y)
-      logger.debug(`Registered plugin ${plugin} CLI`)
+      logger.debug(`Registered plugin CLI: ${plugin}`)
     }
   }
 }

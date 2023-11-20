@@ -1,12 +1,9 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		"outDir": "lib",
 		"rootDir": "src",
-		"target": "ESNext",
-		"lib": ["es6", "dom", "dom.iterable"],
-		"isolatedModules": true
+		"declarationDir": "dist/types"
 	},
 	"include": ["src/**/*"],
-	"exclude": ["src/**/*.test.ts"],
+	"exclude": ["src/**/*.test.ts"]
 }

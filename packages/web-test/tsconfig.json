@@ -1,15 +1,14 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
+		"jsx": "react-jsx",
 		"outDir": "lib",
 		"rootDir": "src",
-		"target": "ESNext",
+		"target": "es2021",
 		"module": "ESNext",
-		"lib": ["es6", "dom", "dom.iterable"],
+		"lib": ["es2021", "dom", "dom.iterable"],
 		"sourceMap": true
 	},
 	"include": ["src/**/*"],
-	"references": [
-		{ "path": "../core" }
-	]
+	"references": [{ "path": "../core/tsconfig.json" }, { "path": "../db/tsconfig.json" }]
 }

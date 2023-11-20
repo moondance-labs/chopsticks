@@ -1,31 +1,35 @@
-import { EventEmitter } from 'eventemitter3'
 import { HexString } from '@polkadot/util/types'
 import {
   ProviderInterface,
   ProviderInterfaceCallback,
   ProviderInterfaceEmitCb,
   ProviderInterfaceEmitted,
-  ProviderStats,
 } from '@polkadot/rpc-provider/types'
-import axios from 'axios'
 
-import { Genesis, genesisSchema } from './schema'
-import { JsCallback, calculateStateRoot, emptyTaskHandler } from './executor'
-import { isUrl } from './utils'
-
+import { EventEmitter } from 'eventemitter3'
+import { Genesis, genesisSchema } from './schema/index.js'
+import { JsCallback, calculateStateRoot, emptyTaskHandler } from './wasm-executor/index.js'
+/**
+ * Provider to start a chain from genesis
+ */
 export class GenesisProvider implements ProviderInterface {
   #isConnected = false
 
-  readonly stats?: ProviderStats
-
-  #eventemitter: EventEmitter
+  #eventemitter = new EventEmitter()
   #isReadyPromise: Promise<void>
 
   #genesis: Genesis
   #stateRoot: Promise<HexString>
 
+  /**
+   * @ignore
+   * Create a genesis provider
+   *
+   * @param genesis - genesis file
+   * @requires genesis provider
+   */
   constructor(genesis: Genesis) {
-    this.#genesis = genesis
+    this.#genesis = genesisSchema.parse(genesis)
     this.#stateRoot = calculateStateRoot(
       Object.entries(this.#genesis.genesis.raw.top).reduce(
         (accu, item) => {
@@ -37,37 +41,20 @@ export class GenesisProvider implements ProviderInterface {
       1,
     )
 
-    this.#eventemitter = new EventEmitter()
-
     this.#isReadyPromise = new Promise((resolve, reject): void => {
       this.#eventemitter.once('connected', (): void => {
         resolve()
       })
       this.#eventemitter.once('error', reject)
+      this.connect()
     })
-  }
-
-  static fromUrl = async (url: string) => {
-    const getFile = async (url: string) => {
-      if (isUrl(url)) {
-        return axios.get(url).then((x) => x.data)
-      } else if (typeof process === 'object') {
-        const { lstatSync, readFileSync } = await import('node:fs')
-        if (lstatSync(url).isFile()) {
-          return JSON.parse(String(readFileSync(url)))
-        }
-      }
-      throw Error(`invalid genesis path or url ${url}`)
-    }
-
-    return new GenesisProvider(genesisSchema.parse(await getFile(url)))
   }
 
   get isClonable(): boolean {
     return true
   }
 
-  clone = (): ProviderInterface => {
+  clone = (): GenesisProvider => {
     return new GenesisProvider(this.#genesis)
   }
 
@@ -80,7 +67,6 @@ export class GenesisProvider implements ProviderInterface {
   }
 
   get isReady(): Promise<void> {
-    this.connect()
     return this.#isReadyPromise
   }
 
@@ -109,7 +95,7 @@ export class GenesisProvider implements ProviderInterface {
   getHeader = async () => {
     return {
       blockHash: this.blockHash,
-      number: 0,
+      number: '0x0' as HexString,
       stateRoot: await this.#stateRoot,
       digest: {
         logs: [],

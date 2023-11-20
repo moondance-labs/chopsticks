@@ -1,12 +1,13 @@
 import { HexString } from '@polkadot/util/types'
 import { StorageKey } from '@polkadot/types'
-import { compactStripLength, hexToU8a, u8aToHex } from '@polkadot/util'
+import { compactStripLength, u8aToHex } from '@polkadot/util'
+import { hexAddPrefix, hexStripPrefix } from '@polkadot/util/hex'
 
-import { Blockchain } from '../blockchain'
+import { Blockchain } from '../blockchain/index.js'
 
-export * from './set-storage'
-export * from './time-travel'
-export * from './decoder'
+export * from './set-storage.js'
+export * from './time-travel.js'
+export * from './decoder.js'
 
 export type GetKeys = (startKey?: string) => Promise<StorageKey<any>[]>
 
@@ -45,9 +46,11 @@ export const compactHex = (value: Uint8Array): HexString => {
 
 export const getParaId = async (chain: Blockchain) => {
   const meta = await chain.head.meta
-  const raw = await chain.head.get(compactHex(meta.query.parachainInfo.parachainId()))
-  if (!raw) throw new Error('Cannot find parachain id')
-  return meta.registry.createType('u32', hexToU8a(raw))
+  const id = await chain.head.read('u32', meta.query.parachainInfo.parachainId)
+  if (!id) {
+    throw new Error('Cannot find parachain id')
+  }
+  return id
 }
 
 export const isUrl = (url: string) => {
@@ -72,4 +75,35 @@ export function defer<T>() {
     deferred.reject = reject
   })
   return deferred
+}
+
+// Chopsticks treats both main storage and child storage as a key-value store
+// The difference is that child storage keys are prefixed with the child storage key
+
+// :child_storage:default: as hex string
+const DEFAULT_CHILD_STORAGE = '0x3a6368696c645f73746f726167653a64656661756c743a'
+
+// length of the child storage key
+const CHILD_LENGTH = DEFAULT_CHILD_STORAGE.length + 64
+
+// returns a key that is prefixed with the child storage key
+export const prefixedChildKey = (prefix: HexString, key: HexString) => prefix + hexStripPrefix(key)
+
+// returns true if the key is a child storage key
+export const isPrefixedChildKey = (key: HexString) => key.startsWith(DEFAULT_CHILD_STORAGE)
+
+// returns a key that is split into the child storage key and the rest
+export const splitChildKey = (key: HexString) => {
+  if (!key.startsWith(DEFAULT_CHILD_STORAGE)) return []
+  if (key.length < CHILD_LENGTH) return []
+  const child = key.slice(0, CHILD_LENGTH)
+  const rest = key.slice(CHILD_LENGTH)
+  return [child, hexAddPrefix(rest)] as [HexString, HexString]
+}
+
+// returns a key that is stripped of the child storage key
+export const stripChildPrefix = (key: HexString) => {
+  const [child, storageKey] = splitChildKey(key)
+  if (!child) return key
+  return storageKey
 }

@@ -1,15 +1,14 @@
 import { SubmittableResult } from '@polkadot/api'
 import { afterAll, describe, expect, it } from 'vitest'
 
-import { defer, expectJson, mockCallback, testingPairs } from './helper'
-import networks from './networks'
+import { defer, expectJson, mockCallback, testingPairs } from './helper.js'
+import networks from './networks.js'
 
 describe('author rpc', async () => {
   const { alice, bob } = testingPairs()
-  const acala = await networks.acala()
-  const { api, dev } = acala
+  const { api, dev, teardown } = await networks.acala()
 
-  await acala.dev.setStorage({
+  await dev.setStorage({
     System: {
       Account: [
         [[alice.address], { data: { free: 10 * 1e12 } }],
@@ -22,7 +21,7 @@ describe('author rpc', async () => {
   })
 
   afterAll(async () => {
-    await acala.teardown()
+    await teardown()
   })
 
   it('works', async () => {
@@ -86,13 +85,27 @@ describe('author rpc', async () => {
     await expect(tx.send()).rejects.toThrow('1010: {"invalid":{"badProof":null}}')
   })
 
+  it('reject unsigned extrinsic', async () => {
+    const tx = api.tx.balances.transfer(bob.address, 100)
+
+    await expect(tx.send()).rejects.toThrow('1011: {"unknown":{"noUnsignedValidator":null}}')
+  })
+
   it('failed apply extirinsic', async () => {
     const finalized = defer<void>()
+    const ready = defer<void>()
+    const inBlock = defer<void>()
     const invalid = defer<string>()
 
     const onStatusUpdate = (result: SubmittableResult) => {
       if (result.status.isInvalid) {
         invalid.resolve(result.status.toString())
+      }
+      if (result.status.isReady) {
+        ready.resolve()
+      }
+      if (result.status.isInBlock) {
+        inBlock.resolve()
       }
       if (result.status.isFinalized) {
         finalized.resolve()
@@ -105,6 +118,8 @@ describe('author rpc', async () => {
 
     await dev.newBlock()
 
+    await ready.promise
+    await inBlock.promise
     await finalized.promise
     expect(await invalid.promise).toBe('Invalid')
   })

@@ -2,10 +2,10 @@ import { BN, hexToU8a, u8aToHex } from '@polkadot/util'
 import { HexString } from '@polkadot/util/types'
 import { Slot } from '@polkadot/types/interfaces'
 
-import { Blockchain } from '../blockchain'
-import { compactHex } from '.'
-import { getAuraSlotDuration } from '../executor'
-import { setStorage } from './set-storage'
+import { Blockchain } from '../blockchain/index.js'
+import { compactHex } from './index.js'
+import { getAuraSlotDuration } from '../wasm-executor/index.js'
+import { setStorage } from './set-storage.js'
 
 export const getCurrentSlot = async (chain: Blockchain) => {
   const meta = await chain.head.meta
@@ -19,8 +19,8 @@ export const getCurrentSlot = async (chain: Blockchain) => {
 
 export const getCurrentTimestamp = async (chain: Blockchain) => {
   const meta = await chain.head.meta
-  const currentTimestampRaw = (await chain.head.get(compactHex(meta.query.timestamp.now()))) || '0x'
-  return meta.registry.createType('u64', hexToU8a(currentTimestampRaw)).toNumber()
+  const timestamp = await chain.head.read('u64', meta.query.timestamp.now)
+  return timestamp?.toBigInt() ?? 0n
 }
 
 export const getSlotDuration = async (chain: Blockchain) => {
@@ -28,8 +28,8 @@ export const getSlotDuration = async (chain: Blockchain) => {
   return meta.consts.babe
     ? (meta.consts.babe.expectedBlockTime as any as BN).toNumber()
     : meta.query.aura
-    ? getAuraSlotDuration(await chain.head.wasm, meta.registry)
-    : 12_000
+      ? getAuraSlotDuration(await chain.head.wasm)
+      : 12_000
 }
 
 export const timeTravel = async (chain: Blockchain, timestamp: number) => {

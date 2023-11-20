@@ -1,13 +1,10 @@
-import { HexString } from '@polkadot/util/types'
-import _ from 'lodash'
-import z from 'zod'
+import { z } from 'zod'
 
-import { Handler, ResponseError } from '../../rpc/shared'
-import { decodeStorageDiff } from '../../utils/decoder'
-import { generateHtmlDiff } from '../../utils/generate-html-diff'
+import { Context, ResponseError } from '@tanssi/chopsticks-core'
+import { decodeStorageDiff } from '../../utils/decoder.js'
+import { generateHtmlDiff } from '../../utils/generate-html-diff.js'
+import { zHash, zHex } from '../../schema/index.js'
 
-const zHex = z.custom<HexString>((val: any) => /^0x\w+$/.test(val))
-const zHash = z.string().length(66).and(zHex)
 const zParaId = z.string().regex(/^\d+$/).transform(Number)
 
 const schema = z.object({
@@ -47,10 +44,70 @@ const schema = z.object({
   at: zHash.optional(),
 })
 
-// custom rpc name (optional). e.g. dryRun will be called as dev_dryRun
-export const name = 'dryRun'
+type Params = z.infer<typeof schema>
 
-export const rpc: Handler = async (context, [params]) => {
+export interface DryRunParams {
+  /**
+   * Return the raw storage diff
+   */
+  raw: Params['raw']
+  /**
+   * Return the html storage diff
+   */
+  html: Params['html']
+  /**
+   * The extrinsic to run
+   */
+  extrinsic: Params['extrinsic']
+  /**
+   * The horizontal messages to run
+   */
+  hrmp: Params['hrmp']
+  /**
+   * The downward messages to run
+   */
+  dmp: Params['dmp']
+  /**
+   * The upward messages to run
+   */
+  ump: Params['ump']
+  /**
+   * The block hash or number to run the extrinsic at
+   */
+  at: Params['at']
+}
+
+/**
+ * Dry run an extrinsic or messages.
+ * If `html` is true, return the generated storage diff html string.
+ * If `raw` is true, return the raw storage diff.
+ * Otherwise, return `{ oldState, newState, delta }`.
+ *
+ * This function is a dev rpc handler. Use `dev_dryRun` as the method name when calling it.
+ *
+ * @param context - The context object of the rpc handler
+ * @param params - The parameters of the rpc handler
+ *
+ * @example Dry run an dmp
+ * ```ts
+ * import { WsProvider } from '@polkadot/rpc-provider'
+ * const ws = new WsProvider(`ws://localhost:8000`)
+ * const params = [
+    {
+      raw: false,
+      dmp: [
+        // https://acala.subscan.io/xcm_message/polkadot-2ab22918c567455af3563989d852f307f4cc1250
+        {
+          sentAt: 14471353,
+          msg: '0x02100104000100000b00280b9bba030a13000100000b00280b9bba03010300286bee0d0100040001010070c53d8e216f9c0f2e3b11c53f5f4bf3e078b995d5f0ed590f889f41e20e6531',
+        },
+      ],
+    },
+  ]
+ * await ws.send('dev_dryRun', params)
+ * ```
+ */
+export const rpc = async (context: Context, [params]: [DryRunParams]) => {
   const { html, extrinsic, hrmp, dmp, ump, raw, at } = schema.parse(params)
   const dryRun = async () => {
     if (extrinsic) {

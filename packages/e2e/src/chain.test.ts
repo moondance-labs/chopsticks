@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { api, delay, dev, env, expectHex, expectJson, mockCallback, setupApi } from './helper'
+import { api, delay, dev, env, expectHex, expectJson, mockCallback, setupApi } from './helper.js'
 
 setupApi(env.acala)
 
@@ -13,6 +13,16 @@ describe('chain rpc', () => {
     expectHex(await api.rpc.chain.getBlockHash()).toMatch(hashHead)
     expectHex(await api.rpc.chain.getBlockHash(0)).toMatch(hash0)
     expectHex(await api.rpc.chain.getBlockHash(1000)).toMatch(hash1000)
+
+    expect(await api.rpc('chain_getHead')).toEqual(hashHead)
+    expect(await api.rpc('chain_getBlockHash', null)).toEqual(hashHead)
+    expect(await api.rpc('chain_getBlockHash', undefined)).toEqual(hashHead)
+    expect(await api.rpc('chain_getBlockHash', [null])).toEqual(expect.arrayContaining([hashHead]))
+    expect(await api.rpc('chain_getBlockHash', [undefined])).toEqual(expect.arrayContaining([hashHead]))
+    expect(await api.rpc('chain_getBlockHash', [0, 1000])).toEqual(expect.arrayContaining([hash0, hash1000]))
+    expect(await api.rpc('chain_getBlockHash', [0, undefined, null])).toEqual(
+      expect.arrayContaining([hash0, hashHead, hashHead]),
+    )
 
     expectJson(await api.rpc.chain.getHeader()).toMatchSnapshot()
     expectJson(await api.rpc.chain.getHeader(hashHead)).toMatchSnapshot()

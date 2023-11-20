@@ -1,4 +1,4 @@
-endpoint: wss://vira-stagenet-dancebox-rpc.a.moondev.network
+endpoint: wss://fraa-dancebox-rpc.a.dancebox.tanssi.network
 mock-signature-host: true
 
 import-storage:

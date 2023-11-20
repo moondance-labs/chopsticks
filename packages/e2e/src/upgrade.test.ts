@@ -2,19 +2,18 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-import { expectJson, testingPairs } from './helper'
+import { expectJson, testingPairs } from './helper.js'
 
-import networks from './networks'
+import networks from './networks.js'
 
 describe('upgrade', async () => {
   const { alice, bob } = testingPairs()
-  const acala = await networks.acala({
+  const { api, dev, chain, teardown } = await networks.acala({
     blockNumber: 2000000,
   })
-  const { api, dev, chain } = acala
 
   afterAll(async () => {
-    await acala.teardown()
+    await teardown()
   })
 
   it('setCode works', async () => {

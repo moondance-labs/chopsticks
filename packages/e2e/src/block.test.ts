@@ -1,14 +1,13 @@
 import { afterAll, describe, expect, it } from 'vitest'
 
-import { delay } from './helper'
-import networks from './networks'
+import { delay } from './helper.js'
+import networks from './networks.js'
 
 describe('block', async () => {
-  const acala = await networks.acala()
-  const { chain, dev } = acala
+  const { chain, dev, teardown } = await networks.acala()
 
   afterAll(async () => {
-    await acala.teardown()
+    await teardown()
   })
 
   it('upcoming block works', async () => {

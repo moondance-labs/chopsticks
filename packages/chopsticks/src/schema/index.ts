@@ -1,10 +1,14 @@
 import { BuildBlockMode, defaultLogger, genesisSchema, isUrl } from '@tanssi/chopsticks-core'
+import { HexString } from '@polkadot/util/types'
 import { basename, extname } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 import _ from 'lodash'
 import axios from 'axios'
 import yaml from 'js-yaml'
+
+export const zHex = z.custom<HexString>((val: any) => /^0x\w+$/.test(val))
+export const zHash = z.string().length(66).and(zHex)
 
 export const configSchema = z
   .object({
@@ -22,6 +26,7 @@ export const configSchema = z
     'registered-types': z.any().optional(),
     'runtime-log-level': z.number().min(0).max(5).optional(),
     'offchain-worker': z.boolean().optional(),
+    resume: z.union([z.string().length(66).startsWith('0x'), z.number(), z.boolean()]).optional(),
   })
   .strict()
 

@@ -1,33 +1,30 @@
 import '@polkadot/types-codec'
-import { DataSource } from 'typeorm'
+import { Api } from './api.js'
+import { Blockchain } from './blockchain/index.js'
+import { BuildBlockMode } from './blockchain/txpool.js'
+import { Database } from './database.js'
+import { GenesisProvider } from './genesis-provider.js'
 import { HexString } from '@polkadot/util/types'
-import { ProviderInterface } from '@polkadot/rpc-provider/types'
-import { RegisteredTypes } from '@polkadot/types/types'
-import { WsProvider } from '@polkadot/api'
-
-import { Api } from './api'
-import { Blockchain } from './blockchain'
-import { BuildBlockMode } from './blockchain/txpool'
-import { Genesis } from './schema'
-import { GenesisProvider } from './genesis-provider'
+import { HttpProvider, WsProvider } from '@polkadot/rpc-provider'
 import {
   InherentProviders,
   ParaInherentEnter,
   SetBabeRandomness,
-  SetLatestAuthorData,
   SetNimbusAuthorInherent,
   SetTimestamp,
   SetValidationData,
-} from './blockchain/inherent'
-import { defaultLogger } from './logger'
-import { openDb } from './db'
+} from './blockchain/inherent/index.js'
+import { ProviderInterface } from '@polkadot/rpc-provider/types'
+import { RegisteredTypes } from '@polkadot/types/types'
+import { SetLatestAuthorData } from './blockchain/inherent/parachain/latest-author.js'
+import { defaultLogger } from './logger.js'
 
-type Options = {
+export type SetupOptions = {
   endpoint?: string
   block?: string | number | null
-  genesis?: string | Genesis
+  genesis?: GenesisProvider
   buildBlockMode?: BuildBlockMode
-  db?: string
+  db?: Database
   mockSignatureHost?: boolean
   allowUnresolvedImports?: boolean
   runtimeLogLevel?: number
@@ -36,16 +33,14 @@ type Options = {
   maxMemoryBlockCount?: number
 }
 
-export const setup = async (options: Options) => {
+export const setup = async (options: SetupOptions) => {
   let provider: ProviderInterface
   if (options.genesis) {
-    if (typeof options.genesis === 'string') {
-      provider = await GenesisProvider.fromUrl(options.genesis)
-    } else {
-      provider = new GenesisProvider(options.genesis)
-    }
+    provider = options.genesis
+  } else if (/^(https|http):\/\//.test(options.endpoint || '')) {
+    provider = new HttpProvider(options.endpoint)
   } else {
-    provider = new WsProvider(options.endpoint)
+    provider = new WsProvider(options.endpoint, 3_000)
   }
   const api = new Api(provider)
   await api.isReady
@@ -74,11 +69,6 @@ export const setup = async (options: Options) => {
 
   defaultLogger.debug({ ...options, blockHash }, 'Args')
 
-  let db: DataSource | undefined
-  if (options.db) {
-    db = await openDb(options.db)
-  }
-
   const header = await api.getHeader(blockHash)
   if (!header) {
     throw new Error(`Cannot find header for ${blockHash}`)
@@ -96,7 +86,7 @@ export const setup = async (options: Options) => {
     api,
     buildBlockMode: options.buildBlockMode,
     inherentProvider: inherents,
-    db,
+    db: options.db,
     header: {
       hash: blockHash as HexString,
       number: Number(header.number),

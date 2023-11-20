@@ -1,31 +1,44 @@
-import { ChainProperties, Header } from '@polkadot/types/interfaces'
 import { DecoratedMeta } from '@polkadot/types/metadata/decorate/types'
+import { Header } from '@polkadot/types/interfaces'
 import { Metadata, TypeRegistry } from '@polkadot/types'
+import { StorageEntry } from '@polkadot/types/primitive/types'
 import { expandMetadata } from '@polkadot/types/metadata'
-import { getSpecExtensions, getSpecHasher, getSpecTypes } from '@polkadot/types-known/util'
-import { hexToU8a, objectSpread, stringToHex } from '@polkadot/util'
-import type { ExtDef } from '@polkadot/types/extrinsic/signedExtensions/types'
+import { hexToU8a, stringToHex } from '@polkadot/util'
 import type { HexString } from '@polkadot/util/types'
 
-import { Blockchain } from '.'
-import { RemoteStorageLayer, StorageLayer, StorageLayerProvider, StorageValue, StorageValueKind } from './storage-layer'
-import { compactHex } from '../utils'
-import { defaultLogger } from '../logger'
-import { getRuntimeVersion, runTask, taskHandler } from '../executor'
-import type { RuntimeVersion } from '../executor'
+import { Blockchain } from './index.js'
+import {
+  RemoteStorageLayer,
+  StorageLayer,
+  StorageLayerProvider,
+  StorageValue,
+  StorageValueKind,
+} from './storage-layer.js'
+import { compactHex } from '../utils/index.js'
+import { getRuntimeVersion, runTask, taskHandler } from '../wasm-executor/index.js'
+import type { RuntimeVersion, TaskCallResponse } from '../wasm-executor/index.js'
 
-export type TaskCallResponse = {
-  result: HexString
-  storageDiff: [HexString, HexString | null][]
-  offchainStorageDiff: [HexString, HexString | null][]
-  runtimeLogs: string[]
-}
-
+/**
+ * Block class.
+ *
+ * @example Instantiate a block
+ *
+ * ```ts
+ * const block = new Block(chain, number, hash)
+ * ```
+ *
+ * @example Get storage
+ *
+ * ```ts
+ * const block = await chain.getBlock('0x...')
+ * block.storage()
+ * ```
+ */
 export class Block {
   #chain: Blockchain
 
   #header?: Header | Promise<Header>
-  #parentBlock?: Block | Promise<Block | undefined>
+  #parentBlock?: WeakRef<Block> | Promise<Block | undefined>
   #extrinsics?: HexString[] | Promise<HexString[]>
 
   #wasm?: Promise<HexString>
@@ -43,28 +56,38 @@ export class Block {
     public readonly hash: HexString,
     parentBlock?: Block,
     block?: {
+      /** See `@polkadot/types/interfaces` Header */
       header: Header
+      /** Extrinsics */
       extrinsics: HexString[]
+      /** Storage provider. Default to {@link RemoteStorageLayer} with {@link Blockchain.api chain.api} as remote. */
       storage?: StorageLayerProvider
+      /** Storage diff to apply. */
       storageDiff?: Record<string, StorageValue | null>
     },
   ) {
     this.#chain = chain
-    this.#parentBlock = parentBlock
+    this.#parentBlock = parentBlock ? new WeakRef(parentBlock) : undefined
     this.#header = block?.header
     this.#extrinsics = block?.extrinsics
     this.#baseStorage = block?.storage ?? new RemoteStorageLayer(chain.api, hash, chain.db)
     this.#storages = []
 
+    this.#runtimeVersion = parentBlock?.runtimeVersion
+    this.#metadata = parentBlock?.metadata
+    this.#registry = parentBlock?.registry
+    this.#meta = parentBlock?.meta
+
     const storageDiff = block?.storageDiff
 
     if (storageDiff) {
-      // if code doesn't change then reuse parent block's meta
-      if (!storageDiff?.[stringToHex(':code')]) {
-        this.#runtimeVersion = parentBlock?.runtimeVersion
-        this.#metadata = parentBlock?.metadata
-        this.#registry = parentBlock?.registry
-        this.#meta = parentBlock?.meta
+      // if code doesn't change then keep parent block's meta
+      // otherwise reset meta
+      if (storageDiff[stringToHex(':code')]) {
+        this.#runtimeVersion = undefined
+        this.#metadata = undefined
+        this.#registry = undefined
+        this.#meta = undefined
       }
 
       this.pushStorageLayer().setAll(storageDiff)
@@ -96,51 +119,92 @@ export class Block {
     return this.#extrinsics
   }
 
-  get parentBlock(): undefined | Block | Promise<Block | undefined> {
+  get parentBlock(): Promise<Block | undefined> {
     if (this.number === 0) {
-      return undefined
+      return Promise.resolve(undefined)
     }
-    if (!this.#parentBlock) {
-      this.#parentBlock = Promise.resolve(this.header).then((h) => this.#chain.getBlock(h.parentHash.toHex()))
+
+    const getBlock = async (header: Header | Promise<Header>) => {
+      const _header = await header
+      const block = await this.#chain.getBlock(_header.parentHash.toHex())
+      if (block) this.#parentBlock = new WeakRef(block)
+      return block
+    }
+
+    if (this.#parentBlock instanceof WeakRef) {
+      const block = this.#parentBlock.deref()
+      if (block) return Promise.resolve(block)
+      this.#parentBlock = getBlock(this.header)
+    } else if (!this.#parentBlock) {
+      this.#parentBlock = getBlock(this.header)
     }
     return this.#parentBlock
   }
 
+  /**
+   * Get the block storage.
+   */
   get storage(): StorageLayerProvider {
     return this.#storages[this.#storages.length - 1] ?? this.#baseStorage
   }
 
-  async get(key: string): Promise<string | undefined> {
+  /**
+   * Get the block storage by key.
+   */
+  async get(key: string): Promise<HexString | undefined> {
     const val = await this.storage.get(key, true)
     switch (val) {
       case StorageValueKind.Deleted:
         return undefined
       default:
-        return val
+        return val as HexString
     }
   }
 
+  async read<T extends string>(type: T, query: StorageEntry, ...args: any[]) {
+    const key = compactHex(query(...args))
+    const value = await this.get(key)
+    if (!value) {
+      return undefined
+    }
+
+    const registry = await this.registry
+    return registry.createType(type, hexToU8a(value))
+  }
+
+  /**
+   * Get paged storage keys.
+   */
   async getKeysPaged(options: { prefix?: string; startKey?: string; pageSize: number }): Promise<string[]> {
     const layer = new StorageLayer(this.storage)
     await layer.fold()
 
     const prefix = options.prefix ?? '0x'
-    const startKey = options.startKey ?? prefix
+    const startKey = options.startKey ?? '0x'
     const pageSize = options.pageSize
 
     return layer.getKeysPaged(prefix, pageSize, startKey)
   }
 
+  /**
+   * Push a layer to the storage stack.
+   */
   pushStorageLayer(): StorageLayer {
     const layer = new StorageLayer(this.storage)
     this.#storages.push(layer)
     return layer
   }
 
+  /**
+   * Pop a layer from the storage stack.
+   */
   popStorageLayer(): void {
     this.#storages.pop()
   }
 
+  /**
+   * Get storage diff.
+   */
   async storageDiff(): Promise<Record<HexString, HexString | null>> {
     const storage = {}
 
@@ -151,6 +215,9 @@ export class Block {
     return storage
   }
 
+  /**
+   * Get the wasm string.
+   */
   get wasm() {
     if (!this.#wasm) {
       this.#wasm = (async (): Promise<HexString> => {
@@ -166,6 +233,9 @@ export class Block {
     return this.#wasm
   }
 
+  /**
+   * Set the runtime wasm.
+   */
   setWasm(wasm: HexString): void {
     const wasmKey = stringToHex(':code')
     this.pushStorageLayer().set(wasmKey, wasm)
@@ -176,30 +246,15 @@ export class Block {
     this.#metadata = undefined
   }
 
+  /**
+   * Get the type registry.
+   * @see https://polkadot.js.org/docs/api/start/types.create#why-create-types
+   */
   get registry(): Promise<TypeRegistry> {
     if (!this.#registry) {
-      this.#registry = Promise.all([
-        this.metadata,
-        this.#chain.api.chainProperties,
-        this.#chain.api.chain,
-        this.runtimeVersion,
-      ]).then(([data, properties, chain, version]) => {
-        const registry = new TypeRegistry(this.hash)
-        registry.setKnownTypes(this.chain.registeredTypes)
-        registry.setChainProperties(registry.createType('ChainProperties', properties) as ChainProperties)
-        registry.register(getSpecTypes(registry, chain, version.specName, version.specVersion))
-        registry.setHasher(getSpecHasher(registry, chain, version.specName))
-        registry.setMetadata(
-          new Metadata(registry, data),
-          undefined,
-          objectSpread<ExtDef>(
-            {},
-            getSpecExtensions(registry, chain, version.specName),
-            this.#chain.api.signedExtensions,
-          ),
-        )
-        return registry
-      })
+      this.#registry = Promise.all([this.metadata, this.runtimeVersion]).then(([data, version]) =>
+        this.#chain.buildRegistry(data, version),
+      )
     }
     return this.#registry
   }
@@ -228,6 +283,9 @@ export class Block {
     return this.#meta
   }
 
+  /**
+   * Call a runtime method.
+   */
   async call(method: string, args: HexString[]): Promise<TaskCallResponse> {
     const wasm = await this.wasm
     const response = await runTask(
@@ -240,11 +298,7 @@ export class Block {
       },
       taskHandler(this),
     )
-    if (response.Call) {
-      for (const log of response.Call.runtimeLogs) {
-        defaultLogger.info(`RuntimeLogs:\n${log}`)
-      }
-
+    if ('Call' in response) {
       if (this.chain.offchainWorker) {
         // apply offchain storage
         for (const [key, value] of response.Call.offchainStorageDiff) {
