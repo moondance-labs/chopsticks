@@ -1,0 +1,113 @@
+import { Block } from '../../block.js'
+import { BuildBlockParams } from '../../txpool.js'
+import { CreateInherents } from '../index.js'
+import { GenericExtrinsic } from '@polkadot/types'
+import { HexString } from '@polkadot/util/types'
+import { Slot } from '@polkadot/types/interfaces'
+import { ValidationData } from './validation-data.js'
+import { WELL_KNOWN_KEYS } from '../../../utils/proof.js'
+import { createProof, decodeProof } from '../../../wasm-executor/index.js'
+import { hexToU8a, u8aToHex } from '@polkadot/util'
+
+const MOCK_LATEST_AUTHORITY = {
+  relayChainState: {
+    trieNodes: [
+      '0x2904528a6a28a362706dc19ff240a361de9e20287de763e5fa945dea51f1754a5da462672e005285a0a133f09f4563aada8bddf42a45149cdf65ffa1d5ef55930b0ea81e4308a0b7a087f4df2d126e53a1980dcaa031d4e96973673142c17d13e8b04b6793a510066175726120a44c720800000000066e6d627380c0284f924b132dd7d8122bf8ddb1966fe0746172eaf14c9efa6b9702f8538e40045250535290bc777ae0707e716e0ce116df1c28f75c4ee3248b5c754438f45a1abd4f4f29a2be681b03056e6d62730101aaa1efb2767e0513138e386df1773d38bc6dab6fa69f70990ef969b3505b2f4f5d7ffaada9288d4ea42313124f280b41c45aa21c69494b909f91f3ddceed5185',
+      '0x3501b450a5938790b80b00000f6812e21b6cb8c6bfc3ccb8c0e385216b89794104332bf609eb0a3d8eb2da38',
+      '0x80012480ce62610a2e5034478d9842fe22b23dca417eff9224fc8cbd66c3d263af5ae23f8024b1b5473b2bf666c72d5e132817c8f6125d7e9e11ecc8ad560a920bd4d9e12480fdfa67a9162448a960b550c4bd9c70a7906072a64fdae16555991ee4b766bf75',
+      '0x80046c807426da738795208da0d742d621e9aad54e713d665da8a5047f6aeaf60dc0cd6980e4d6c6c271622ff849845130ef972841579ff689771e3818cb638e1f337df156808f83f0d8e6399e9f9d10c3c89b614e318848dfb7ecead89b137ab1fe2fa968f980226f20b4825c169b685b6576ece4295092bf2b9e5e155bd252b3ee92af0bc8bc806085cb4e70484eb592eada793cb8738831ecc76708cf03fc78f63f705b6d479c',
+      '0x804d3d808f62ab98d4eb9d096f25a83998039b7848449fa4481cf310b594937f31ac84998021112ed5f4bd7148c571e457787bc026ed035c80272e330570127dfe1e06b9a48032fe58e981256f90fdbcf7222a1a37cac4be6b4b9df54617041f3b67f62241968016e902afa957ef4c17bc01220c5b1517053eacdf7838b43c7edf29b679fbb57580f024a7c8a0b84c7ed658ae507d0cf8fc1a35bddd1a23ca518e84cf37fa77f04f80b659ab6aa01948685fb479b898bc4c35f401eb5bcfd0a0fafec040b0f90c296e807867b48b247563a53a9d4980910545a18a6a7f2804b57dc59ec7d7d4c21fadc780ea00da0faeb012144ff9edc30bb7ae2d0c783cfbbd9f996af256b7fd1abbe31980eea42cfd63e92eb4d69de52771ce6e20399b71c48cda16b528f578f554fa32d3',
+      '0x80ffff80644c86f536a1f0dc4f9ed21ec8e6d3c034976cb16fbb96689ac8c4d5bcc1a99480592fa11ceb096cfed6ceeddaed3a95b49ac0409fb7d569833e5d40d737eeb062804fbd58bdbc481c9a55b778cf4e58709970fa3bd6194b5cdde1e61164b0dde967802f9a988b38520b045b49ae6ff79fe4733b9a7ac087a0ce94252c75a946575d438058e1f5b34e53e28fefd9be884b66b0590660c582c62319f842fbcbb69dbd19fc80a2384bef6691dbc6880420a9649af29a711cf92b5857a68786dadffde1ed55e3808c348f8778e6989d00043a9da75fbe38095610dea9fdc4c318df98ff01656065800c023362972037dc56cd340c5b03ddf46c70199a605c8b89422f2c155cf24b9880302b1973a7fcd94411ee507fd8386e3220a1e43a3b4638f90b67f63bdb1d31f080c1641daf7ba3bdd0d3de3ab7ec73cc02a99d2e7c9c4efaad85a3fbfe651c67568070d68ca6c78beb0d52d846d5e012a71c35be16bdd62942178e5b2bc3d2756b7e8043128ef1c4bb265a2d7da9fa40f6a3d8d120f30a2329a5ae52df96e32a9ae3878016c6b88dbef8d130164af3e902b6a10cb8ea20032b43c9920b7b2ca472a67c7f80c85153fbd42a150d03397dc01763458a896a333ab8ac49e7205a43c7470b54df80942ff3c320514b1fbfa10c91aad376b62a4c9e667107f0ecf728e59bfcf7ffff80dbaff455f522349f1bb475a5b5ca1952e01ab05f6f41694cb5105b3ad7bb90ce',
+      '0x9e710b30bd2eab0352ddcc26417aa1945fc3801791108ea3aee0ffe40533b6191225b5ea8f3aa542b72bcd34f1de654660716e80837fff31fcfab542a52d7c01acf8efa39b45761c36e7fa1a3538e8cab72c9d6e80ddb746b321d611e7759a489844f5367532813fa4e96ce624ff88259eeec3a1558001d8b8d0f93429f560b64245e03460feac48ade9ea7447442b4a0244d59b0103505f0e7b9012096b41c4eb3aaf947f6ea4290800004c5f03c716fb8fff3de61a883bb76adb34a20400802fdb559eb0d8879ed796c75a3cae58842826416a4ac24f2ab3a09dd570f432244c5f0f4993f016e2d2f8e5f43be7bb25948604008041d208c9b947d6bbd2103bbcb161fd2233efd4d4837f662f3de167ddc245dd8f807dc2e3d1168de488cc0b76fe4515b70a477ef1ddb81ba7a4d3c39d4c4a205373',
+      '0x9f0b3c252fcb29d88eff4f3de5de4476c3ffff80f1bcf1f7dc68be52da46a67db59acde05b254b113f9aba19bc7f8733da8f3d4680dfc0285889cc6edcc089957e9080df21a373a3c0046482ebaa7a9875db6ceffa80fae693930e9552d14c20a8e317b52a990d49fd6701706a1ec8ba4d52f47b1c8b80f6df647b29be8f37ce8aa1861a789f4603db8f114cbc88462233eba51558671e800a0e46cf06052791b5abbfbc60aea4c188031aa8c0d4a9b78783683f7f34eab280096aa84b36978f4389ce4fdb5afdc12705db39cb9c28aacb4f62c3587183a6db809b44dc9ce4d4e883a6ccb61cdf018d171e792c9c0315c5f3e711fe877e7706e980df210a8d4faefeb58b23b23cf6ab7edaa5e3ee2bc76cc698219e04f8cb9ba1e0805513de7c58f573d847e955ac595bc5cff91b750e6973579b0fc827301a65fb73802c01198d95ad3f46bfbc9733df46c0c32225ec55ec91cc9ad671d5081b6786138076d93f04b6aa5c87303a77bc2fbd051fc850cfadab595398776afd48446ef97b809021544d85097e0b8b6cd0e6b75310088199f943501228e80b9245f8b79be8b680a0fe358051dddab3934a15972548651feea41ba13d76211261a5e97d07fc587e80030ad780c20fe43df3ee87aef0a6b598d3f2c433d7d7597651117b4de3fe7537802b937bd8bd622679842f236b1e6579c1e1ff86828ec761ba8d2c71d5863a28a68093e2f5e44fbf9f2a9f511274f3fdf445e11233a9992b04beabe81d5695b54c83',
+    ],
+  },
+  orchestratorChainState: {
+    trieNodes: [
+      '0x0c567b6ddb05396c0a83853b6f40d27450534c7963df8619b8c6064480c4db9703e6579b74a48de24213d5b7a089622f1a94f78ec1ec3785fde1426b523fc8434ac0284f924b132dd7d8122bf8ddb1966fe0746172eaf14c9efa6b9702f8538e4048b90b00000814eae7c698bc779b8f6790e1880749baaba123267737f6b3f59201943e6c9e07326bc5e6472d2514bb2cde853749eeb8f826f0c7a0cde7fbb83ae4beabe58d10cc0b0000084cc5ee55cb1d000f8bfc1992cddeb0a041884bf50bdeafd88fe208a8855bdd1774ff3c1f33bb5d1256bdfafdc0eb3bd9bf34ea1c69e4a8108969508c3352f913cf0b0000089cc703e7d0466e194d4b33b22fc052cfe13672589c1c9ddcb85b0715bbf134158e5f04972e5830c47a9095c6c56ec88039d6b118ad9fa43c49d78abf4bfd3d43d10b000008e8690996c3345772f027690fc5d3e2d77748e3bd91a6a0c43a84de84ce0d3b4044f6e8f1923fe6328405cee15a2f4474eb391f0182cd207c14eb22063249ea4fd70b0000089c989efeca1101f05fe1e0c103829b102c1112e4a8912600911f7d6bfaa19870cad85cec5d35c72a991d4b63cb28e83a3e4045eaa1b8d895828584f626320c7bdb0b00000812bdcb6414fdd283a9cf47939de4129e3e3160ecdb717e82c407a9b4b6d9416bae53810bbff0b34deda650bcf7d470612bd7e85db9ac5a387d58bda00b5c7148e00b000008d87c62d7a0f3a539d783d928b8bcaedbbe3bfddcabb4e5e7fb1d8842beb92156d8e9653d0cb8a851570b82544380a229d5f0f3713cbadda34d4c90633be08125e10b0000082ecbfcfa6725e1eac37537be2de0df326f99c2091ef3cd9966070f7487959b59bc2b23b857a953f17b20502d179ed0023d918cc29dd2ba7d3c0c4f99614a5957e30b000008486ed73a342e8ec18bf7eed4fc8b21fd5a944fa33ab2cfee987931aaf5033d424e1173e3fac487daf801ba2ef49e7b0aef0b979765ce647a193240458a39f708ec0b000008ea603ecf1f08def0d57746641a5134b8fa8000d430937cf0d049b7b871e0ae10a0f011efb5fcded03188f49584f5b19bd22e11151a238862ce025a82ec94bf63ee0b000008aecfc53fccce90106ae27a3a539a9dcf5b517ca19d96028ac0f37dbc874dfa40f09dc0688deb043f5e77965a09611e570a6361430bc15f8212b657caaa67e84cf10b00000828697e455a867f9c5b38eb2b0bbaf26c2264909c7bdabdd6672c8e30e5f15e15728332e885a88bb1f04201fef040e15a7c171c2cc5d59f82b11d9d8650e66533f70b0000082e11ba8450ccd898c63267f210c4f83ca90ae3151b04abbe60f88d716b5a615a9219d3053af12f4b23ae85195519e256cbf13f163097a0a79567967da4848921f80b000008880b09dfe1f181abc7ea139b9f6ce89c42f36bee7fe2d668e3a2b276e1065d07aa144d8592fe8e56371009e1ed531c1d3d6b0459d4fe31e982317e4b4f60f02ff90b00000860aeda366458d3b12446f95ad5e0bd2d1144a2ca29f2898697780abdc52db55d646d0eccdacc4cf97e07323bb4de266e93c68c0fa7cfecf8ecb35d7aebffa768fc0b0000080488cda202516595dc04675c5c74d6117edd8fcc46a147e427f8c9d1c60c3f590e0897bf19cf6fb452044ba593550db8c367458269e588f81401b4f488437671fe0b0000088a787c80c0681f64b1173c506f18f4d830425639191af6c48b97580ecbdc0f4624a62d80831a48784aa86f6e6c4c014ff360cc5041f4bd8e39dff939166fb977000c000008f26db997e5c2a08a910b9c91c44fe5cec4357715ea4de7610ff4cf772fbfdd311ad4b9c75a63df2c14552fcf96f9d9b1ee78828578c511fa91784d03fa470a03',
+      '0x3705c548b286c6b241e609000055aa428b4054199deff08651453ec4729cb7e1da05f2ad1c08cc6d03e1ca7a64',
+      '0x80046080e712558850fab8b478c419a6ea0b78cfda2ed6eb9371daae837223c79b0a06dd800f0444421fb8ed91ede17ae6ed359b61d8d3a6a0a54f57234de976cc2dbede3180aed72f74c3bf8d88ac09413cd738bcbbf6216cbe01b9d3deff6ac097a2a47990',
+      '0x8008088062ea7aaaf29f891f4aecfc3db0def388ea186513f6b609293c07defcf20c6a2d806bd8328dc1732b23cb88e13fe255baffa6324899b70a9c929014e42fda8b19a5',
+      '0x80bff780cbeb9af55f92a56bed73525d37a54a83db5ffd070ec3fdaa12ca795f19f52ba080aeddf059e5dcf146bf75a6983eb1fcc041240c18cf787bcd96414e5d6a5a879980320db239f3d419dc8964c198a841adf1fcff5160905c6d17ba02005f20aa9706802cdf61514211fb4e1fee44ef81540dca8351ea4a8a20168e0e27de5c5a3827f18093381df0066b6a1733e0564d3ccda4b827f063e8ddd844de8a5626fa5fde9d6e80de0816b4a1496ff4d6df0a66dd7755dda4bae6854ac371eb05861a63c948fbad80959ee4b9b384fdf88c96c01e2105616d2c99c4de19d0f7d6ae6bc63515394bce80eb6d0634bb4d86d363592ff2dc48424027b5b791c288ff096e23dc80e3c022518009414106691889711e93471edc67aa3e24c2aec56ff072cb1d70129e96ffcc3b809299f15ad6b24254daa580664041fe6e8357aa4250e14aa55c5bb264b722ab90808289218d91b027b2374b1ef79d7eb2b728f87feed01860ad215a0246586e421b802217e25481fd0472a075eea88984b31dec723606e9d5adf08059e07843da4423806c6552216fa50ae64124a6b3d501c0ee760ed909ddf6268c3944da047e2aaebe807b2467ece173e36bc13bc83ea907778de3566c58e0e0d1fbc7f27ca2ca607a59',
+      '0x8102c00080f524256749b35ef86b3e3d99130f6bd56fb68cec91bf6e3a4a87b290f394b8e6545d063800a36a99fdfc7c10f6415f6ee610e6090000',
+      '0x9ec5070d609dd3497f72bde07fc96ba090438062505c7da5ca558592a4a7e344bd606554b584fe6ee638dae9b7383222b09f58807a98ba7e17ecdf742c2e76df0fbb7bcd04a607470ca041654fd8b1392cf7567b807b88292b88b5a672e2c891b7a5d717abaf9c77cc59a22084b6c365262f1d9d494c5f0450bfa4b96a3fa7a3c8f40da6bf32e1040180a2258f67eed68a3b024b4e76e1ec4023adc7c73883b524e61bbbfe91a9624878',
+      '0x9ee78423c7e3ed25234f80d54547285a120080bdf70fd03be79b32771cd14ea2af13f53573bf64cfd4911c7427e3150d37eb49505f0e7b9012096b41c4eb3aaf947f6ea429080000',
+      '0x9f070f16afec7d161bc6acec3964492a0c001180302958b3f488209928f49a432aef3655cb35fe12a72ff9761b17051af39fdeb080edcbd7dc471d885277e4c6d7fdd9c537967aa867d7cacc1cd28dcbf1bea981bc',
+    ],
+  },
+} satisfies LatestAuthorityData
+
+export type LatestAuthorityData = {
+  relayChainState: {
+    trieNodes: HexString[]
+  }
+  orchestratorChainState: {
+    trieNodes: HexString[]
+  }
+}
+
+export class SetLatestAuthorityData implements CreateInherents {
+  async createInherents(parent: Block, _params: BuildBlockParams): Promise<HexString[]> {
+    const meta = await parent.meta
+    if (!meta.tx.authoritiesNoting?.setLatestAuthoritiesData) {
+      return []
+    }
+
+    const extrinsics = await parent.extrinsics
+
+    let newData: LatestAuthorityData
+    const newEntries: [HexString, HexString | null][] = []
+
+    if (parent.number === 0) {
+      // chain started with genesis, mock 1st validationData
+      newData = MOCK_LATEST_AUTHORITY as LatestAuthorityData
+    } else {
+      const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
+        const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
+        return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
+      })
+      const validationDataExtrinsic = extrinsics.find((extrinsic) => {
+        const firstArg = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)?.args?.[0]
+        return firstArg && 'validationData' in firstArg
+      })
+
+      const { orchestratorChainState, relayChainState } = meta.registry
+        .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
+        .args[0].toJSON() as any as LatestAuthorityData
+
+      const setValidationExtrinsic = meta.registry
+        .createType<GenericExtrinsic>('GenericExtrinsic', validationDataExtrinsic)
+        .args[0].toJSON() as any as ValidationData
+
+      const decoded = await decodeProof(
+        setValidationExtrinsic.validationData.relayParentStorageRoot,
+        [...Object.values(WELL_KNOWN_KEYS)],
+        setValidationExtrinsic.relayChainState.trieNodes,
+      )
+
+      // newEntries.push([storageKey, storageValue])
+      // e.g. newEntries.push([key, u8aToHex(newSlot.toU8a())])
+      // add what we want to: utils/proof.ts
+
+      // Change below to the storage you want to prove, example below is for current slot
+      const currentSlot = meta.registry
+        .createType<Slot>('Slot', hexToU8a(decoded[WELL_KNOWN_KEYS.CURRENT_SLOT]))
+        .toNumber()
+      const newSlot = meta.registry.createType<Slot>('Slot', currentSlot + 2)
+      newEntries.push([WELL_KNOWN_KEYS.CURRENT_SLOT, u8aToHex(newSlot.toU8a())])
+
+      const { nodes: relayStateNodes } = await createProof(relayChainState.trieNodes, newEntries)
+
+      newData = {
+        relayChainState: {
+          trieNodes: relayStateNodes,
+        },
+        orchestratorChainState,
+      }
+    }
+
+    const inherent = new GenericExtrinsic(meta.registry, meta.tx.authoritiesNoting.setLatestAuthoritiesData(newData))
+
+    return [inherent.toHex()]
+  }
+}

@@ -102,12 +102,12 @@ export const newHeader = async (head: Block, unsafeBlockHeight?: number) => {
       : await getAuraAuthorities(head.chain)
     const auraBlob = preRuntimes?.find((x) => x.consensusEngine.isAura)
     const nimbusBlob = preRuntimes?.find((x) => x.consensusEngine.toString() == 'nmbs')
-
     const prevSlot = Number(newLogs[0].asPreRuntime[1].reverse().toHex())
     const newSlot = compactAddLength(meta.registry.createType('Slot', prevSlot + 1).toU8a())
-    const newKey = (await isContainerChain(head.chain))
-      ? authorities[0]
-      : meta.registry.createType('NimbusPrimitivesNimbusCryptoPublic', authorities[(prevSlot + 1) % authorities.length])
+    const newKey = meta.registry.createType(
+      'NimbusPrimitivesNimbusCryptoPublic',
+      authorities[(prevSlot + 1) % authorities.length],
+    )
 
     newLogs = [
       { PreRuntime: [auraBlob!.consensusEngine, newSlot] },
