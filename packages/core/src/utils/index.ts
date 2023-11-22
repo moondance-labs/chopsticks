@@ -44,6 +44,15 @@ export const compactHex = (value: Uint8Array): HexString => {
   return u8aToHex(compactStripLength(value)[1])
 }
 
+export const getOrchestratorId = async (chain: Blockchain) => {
+  const meta = await chain.head.meta
+  const id = await chain.head.read('u32', meta.query.authoritiesNoting.orchestratorParaId)
+  if (!id) {
+    throw new Error('Cannot find orchestrator id')
+  }
+  return id
+}
+
 export const getParaId = async (chain: Blockchain) => {
   const meta = await chain.head.meta
   const id = await chain.head.read('u32', meta.query.parachainInfo.parachainId)

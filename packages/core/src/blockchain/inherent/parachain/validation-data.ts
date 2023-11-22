@@ -2,7 +2,7 @@ import { AbridgedHrmpChannel, HrmpChannelId, Slot } from '@polkadot/types/interf
 import { Block } from '../../block.js'
 import { BuildBlockParams, DownwardMessage, HorizontalMessage } from '../../txpool.js'
 import { CreateInherents } from '../index.js'
-import { GenericExtrinsic } from '@polkadot/types'
+import { GenericExtrinsic, u32 } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
 import { LatestAuthorityData } from './latest-authority.js'
 import {
@@ -11,11 +11,12 @@ import {
   hrmpChannels,
   hrmpEgressChannelIndex,
   hrmpIngressChannelIndex,
+  orchestratorParaHead,
   paraHead,
   upgradeGoAheadSignal,
 } from '../../../utils/proof.js'
 import { blake2AsHex, blake2AsU8a } from '@polkadot/util-crypto'
-import { compactHex, getParaId } from '../../../utils/index.js'
+import { compactHex, getOrchestratorId, getParaId } from '../../../utils/index.js'
 import { createProof, decodeProof } from '../../../wasm-executor/index.js'
 import { hexToU8a, u8aConcat, u8aToHex } from '@polkadot/util'
 import _ from 'lodash'
@@ -104,9 +105,9 @@ export class SetValidationData implements CreateInherents {
         .createType<GenericExtrinsic>('GenericExtrinsic', validationDataExtrinsic)
         .args[0].toJSON() as any as ValidationData
 
-      const orchestratorParaHeadKey =
-        '0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c3acd1b450a5938790b80b0000'
-      // TODO: refactor this to have a single decodeProof
+      const orchestratorId = await getOrchestratorId(parent.chain)
+      const orchestratorParaHeadKey = orchestratorParaHead(orchestratorId)
+
       const decodedSetAuthorities = await decodeProof(
         extrinsic.validationData.relayParentStorageRoot,
         [orchestratorParaHeadKey],
@@ -126,7 +127,13 @@ export class SetValidationData implements CreateInherents {
       // TODO: refactor this to have a single decodeProof
       const decoded = await decodeProof(
         extrinsic.validationData.relayParentStorageRoot,
-        [...Object.values(WELL_KNOWN_KEYS), dmqMqcHeadKey, hrmpIngressChannelIndexKey, hrmpEgressChannelIndexKey],
+        [
+          ...Object.values(WELL_KNOWN_KEYS),
+          dmqMqcHeadKey,
+          hrmpIngressChannelIndexKey,
+          hrmpEgressChannelIndexKey,
+          orchestratorParaHeadKey,
+        ],
         extrinsic.relayChainState.trieNodes,
       )
       for (const key of Object.values(WELL_KNOWN_KEYS)) {
