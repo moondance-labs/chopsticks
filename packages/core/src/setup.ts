@@ -17,7 +17,7 @@ import {
 import { ProviderInterface } from '@polkadot/rpc-provider/types'
 import { RegisteredTypes } from '@polkadot/types/types'
 import { SetLatestAuthorData } from './blockchain/inherent/parachain/latest-author.js'
-import { SetLatestAuthorityData } from './blockchain/inherent/parachain/latest-authority.js'
+import { SetLatestAuthorityData } from './blockchain/inherent/parachain/validation-data.js'
 import { defaultLogger } from './logger.js'
 
 export type SetupOptions = {

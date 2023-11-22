@@ -1,5 +1,5 @@
 import { AbridgedHrmpChannel, HrmpChannelId, Slot } from '@polkadot/types/interfaces'
-import { GenericExtrinsic } from '@polkadot/types'
+import { GenericExtrinsic, u32 } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
 import { hexToU8a, u8aConcat, u8aToHex } from '@polkadot/util'
 import _ from 'lodash'
@@ -19,6 +19,8 @@ import {
 import { blake2AsHex, blake2AsU8a } from '@polkadot/util-crypto'
 import { compactHex, getParaId } from '../../../utils/index.js'
 import { createProof, decodeProof } from '../../../wasm-executor/index.js'
+import { LatestAuthorityData, MOCK_LATEST_AUTHORITY } from './latest-authority.js'
+
 
 const MOCK_VALIDATION_DATA = {
   validationData: {
@@ -69,6 +71,7 @@ export class SetValidationData implements CreateInherents {
 
     let newData: ValidationData
 
+    let authoritiesNodes: HexString[] = ["0x00"];
     if (parent.number === 0) {
       // chain started with genesis, mock 1st validationData
       newData = MOCK_VALIDATION_DATA as ValidationData
@@ -80,9 +83,30 @@ export class SetValidationData implements CreateInherents {
       if (!validationDataExtrinsic) {
         throw new Error('Missing validation data from block')
       }
+
+      const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
+        const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
+        return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
+      })
+
+      const { relayChainState: relayChainStateSetAuthorities } = meta.registry
+        .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
+        .args[0].toJSON() as any as LatestAuthorityData
+
       const extrinsic = meta.registry
         .createType<GenericExtrinsic>('GenericExtrinsic', validationDataExtrinsic)
         .args[0].toJSON() as any as ValidationData
+
+
+      const orchestratorParaHeadKey = "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c3acd1b450a5938790b80b0000";
+      // TODO: refactor this to have a single decodeProof
+      const decodedSetAuthorities = await decodeProof(
+        extrinsic.validationData.relayParentStorageRoot,
+        [orchestratorParaHeadKey],
+        relayChainStateSetAuthorities.trieNodes,
+      );
+
+      console.log("decodedSetAuthorities ", decodedSetAuthorities)
 
       const newEntries: [HexString, HexString | null][] = []
       const downwardMessages: DownwardMessage[] = []
@@ -100,12 +124,13 @@ export class SetValidationData implements CreateInherents {
         [...Object.values(WELL_KNOWN_KEYS), dmqMqcHeadKey, hrmpIngressChannelIndexKey, hrmpEgressChannelIndexKey],
         extrinsic.relayChainState.trieNodes,
       )
+      console.log("previous hash was ", extrinsic.validationData.relayParentStorageRoot)
 
       for (const key of Object.values(WELL_KNOWN_KEYS)) {
         if (key === WELL_KNOWN_KEYS.CURRENT_SLOT) {
           // increment current slot
           const currentSlot = meta.registry.createType<Slot>('Slot', hexToU8a(decoded[key])).toNumber()
-          const newSlot = meta.registry.createType<Slot>('Slot', currentSlot + 2)
+          const newSlot = meta.registry.createType<Slot>('Slot', currentSlot)
           newEntries.push([key, u8aToHex(newSlot.toU8a())])
         } else {
           newEntries.push([key, decoded[key]])
@@ -113,6 +138,7 @@ export class SetValidationData implements CreateInherents {
       }
       newEntries.push([hrmpIngressChannelIndexKey, decoded[hrmpIngressChannelIndexKey]])
       newEntries.push([hrmpEgressChannelIndexKey, decoded[hrmpEgressChannelIndexKey]])
+      newEntries.push([orchestratorParaHeadKey, decodedSetAuthorities[orchestratorParaHeadKey]])
 
       // inject paraHead
       const headData = meta.registry.createType('HeadData', (await parent.header).toHex())
@@ -235,7 +261,17 @@ export class SetValidationData implements CreateInherents {
       }
 
       const { trieRootHash, nodes } = await createProof(extrinsic.relayChainState.trieNodes, newEntries)
+      const decodedSetAuthoritiesCopy = await decodeProof(
+        trieRootHash,
+        [orchestratorParaHeadKey],
+        nodes,
+      );
+      
+      console.dir(decodedSetAuthoritiesCopy, { depth: null})
 
+      console.log("new hash is ", trieRootHash);
+      console.log("newEntries is ", newEntries);
+      console.log("nodes ", nodes);
       newData = {
         ...extrinsic,
         downwardMessages,
@@ -254,5 +290,308 @@ export class SetValidationData implements CreateInherents {
     const inherent = new GenericExtrinsic(meta.registry, meta.tx.parachainSystem.setValidationData(newData))
 
     return [inherent.toHex()]
+  }
+}
+
+export async function latestAuthoritInherent(parent: Block, params: BuildBlockParams): Promise<HexString> {
+  let GLOBAL_NODES: any;
+
+  {
+    const meta = await parent.meta
+    if (!meta.tx.parachainSystem?.setValidationData) {
+      return "0x00"
+    }
+
+    const extrinsics = await parent.extrinsics
+
+    let newData: ValidationData
+
+    let authoritiesNodes: HexString[] = ["0x00"];
+    if (parent.number === 0) {
+      // chain started with genesis, mock 1st validationData
+      newData = MOCK_VALIDATION_DATA as ValidationData
+    } else {
+      const validationDataExtrinsic = extrinsics.find((extrinsic) => {
+        const firstArg = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)?.args?.[0]
+        return firstArg && 'validationData' in firstArg
+      })
+      if (!validationDataExtrinsic) {
+        throw new Error('Missing validation data from block')
+      }
+
+      const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
+        const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
+        return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
+      })
+
+      const { relayChainState: relayChainStateSetAuthorities } = meta.registry
+        .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
+        .args[0].toJSON() as any as LatestAuthorityData
+
+      const extrinsic = meta.registry
+        .createType<GenericExtrinsic>('GenericExtrinsic', validationDataExtrinsic)
+        .args[0].toJSON() as any as ValidationData
+
+
+      const orchestratorParaHeadKey = "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c3acd1b450a5938790b80b0000";
+      // TODO: refactor this to have a single decodeProof
+      const decodedSetAuthorities = await decodeProof(
+        extrinsic.validationData.relayParentStorageRoot,
+        [orchestratorParaHeadKey],
+        relayChainStateSetAuthorities.trieNodes,
+      );
+
+      console.log("decodedSetAuthorities ", decodedSetAuthorities)
+
+      const newEntries: [HexString, HexString | null][] = []
+      const downwardMessages: DownwardMessage[] = []
+      const horizontalMessages: Record<number, HorizontalMessage[]> = {}
+
+      const paraId = await getParaId(parent.chain)
+
+      const dmqMqcHeadKey = dmqMqcHead(paraId)
+      const hrmpIngressChannelIndexKey = hrmpIngressChannelIndex(paraId)
+      const hrmpEgressChannelIndexKey = hrmpEgressChannelIndex(paraId)
+
+      // TODO: refactor this to have a single decodeProof
+      const decoded = await decodeProof(
+        extrinsic.validationData.relayParentStorageRoot,
+        [...Object.values(WELL_KNOWN_KEYS), dmqMqcHeadKey, hrmpIngressChannelIndexKey, hrmpEgressChannelIndexKey],
+        extrinsic.relayChainState.trieNodes,
+      )
+      console.log("previous hash was ", extrinsic.validationData.relayParentStorageRoot)
+
+      for (const key of Object.values(WELL_KNOWN_KEYS)) {
+        if (key === WELL_KNOWN_KEYS.CURRENT_SLOT) {
+          // increment current slot
+          const currentSlot = meta.registry.createType<Slot>('Slot', hexToU8a(decoded[key])).toNumber()
+          const newSlot = meta.registry.createType<Slot>('Slot', currentSlot)
+          newEntries.push([key, u8aToHex(newSlot.toU8a())])
+        } else {
+          newEntries.push([key, decoded[key]])
+        }
+      }
+      newEntries.push([hrmpIngressChannelIndexKey, decoded[hrmpIngressChannelIndexKey]])
+      newEntries.push([hrmpEgressChannelIndexKey, decoded[hrmpEgressChannelIndexKey]])
+      newEntries.push([orchestratorParaHeadKey, decodedSetAuthorities[orchestratorParaHeadKey]])
+
+      // inject paraHead
+      const headData = meta.registry.createType('HeadData', (await parent.header).toHex())
+      newEntries.push([paraHead(paraId), u8aToHex(headData.toU8a())])
+
+      // inject downward messages
+      let dmqMqcHeadHash = decoded[dmqMqcHeadKey]
+      if (dmqMqcHeadHash) {
+        for (const { msg, sentAt } of params.downwardMessages) {
+          // calculate new hash
+          dmqMqcHeadHash = blake2AsHex(
+            u8aConcat(
+              meta.registry.createType('Hash', dmqMqcHeadHash).toU8a(),
+              meta.registry.createType('BlockNumber', sentAt).toU8a(),
+              blake2AsU8a(meta.registry.createType('Bytes', msg).toU8a(), 256),
+            ),
+            256,
+          )
+
+          downwardMessages.push({
+            msg,
+            sentAt,
+          })
+        }
+        newEntries.push([dmqMqcHeadKey, dmqMqcHeadHash])
+      }
+
+      const hrmpIngressChannels = meta.registry
+        .createType('Vec<ParaId>', decoded[hrmpIngressChannelIndexKey])
+        .toJSON() as number[]
+
+      const hrmpEgressChannels = meta.registry
+        .createType('Vec<ParaId>', decoded[hrmpEgressChannelIndexKey])
+        .toJSON() as number[]
+
+      const hrmpMessages = {
+        // reset values, we just need the keys
+        ..._.mapValues(extrinsic.horizontalMessages, () => [] as HorizontalMessage[]),
+        ...params.horizontalMessages,
+      }
+
+      // inject horizontal messages
+      for (const id of hrmpIngressChannels) {
+        const messages = hrmpMessages[id]
+        const sender = Number(id)
+
+        const channelId = meta.registry.createType<HrmpChannelId>('HrmpChannelId', {
+          sender,
+          receiver: paraId.toNumber(),
+        })
+        const hrmpChannelKey = hrmpChannels(channelId)
+        const decoded = await decodeProof(
+          extrinsic.validationData.relayParentStorageRoot,
+          [hrmpChannelKey],
+          extrinsic.relayChainState.trieNodes,
+        )
+        const abridgedHrmpRaw = decoded[hrmpChannelKey]
+        if (!abridgedHrmpRaw) throw new Error('Canoot find hrmp channels from validation data')
+
+        const abridgedHrmp = meta.registry
+          .createType<AbridgedHrmpChannel>('AbridgedHrmpChannel', hexToU8a(abridgedHrmpRaw))
+          .toJSON()
+        const paraMessages: HorizontalMessage[] = []
+
+        for (const { data, sentAt: _unused } of messages) {
+          // fake relaychain sentAt to make validationData think this msg was sent at previous block
+          const sentAt = extrinsic.validationData.relayParentNumber + 1
+
+          // calculate new hash
+          const bytes = meta.registry.createType('Bytes', data)
+          abridgedHrmp.mqcHead = blake2AsHex(
+            u8aConcat(
+              meta.registry.createType('Hash', abridgedHrmp.mqcHead).toU8a(),
+              meta.registry.createType('BlockNumber', sentAt).toU8a(),
+              blake2AsU8a(bytes.toU8a(), 256),
+            ),
+            256,
+          )
+          abridgedHrmp.msgCount = (abridgedHrmp.msgCount as number) + 1
+          abridgedHrmp.totalSize = (abridgedHrmp.totalSize as number) + bytes.length
+
+          paraMessages.push({
+            data,
+            sentAt,
+          })
+        }
+
+        horizontalMessages[sender] = paraMessages
+
+        newEntries.push([hrmpChannelKey, meta.registry.createType('AbridgedHrmpChannel', abridgedHrmp).toHex()])
+      }
+
+      // inject hrmpEgressChannels proof
+      for (const id of hrmpEgressChannels) {
+        // const messages = hrmpMessages[id]
+        const receiver = Number(id)
+
+        const channelId = meta.registry.createType<HrmpChannelId>('HrmpChannelId', {
+          sender: paraId.toNumber(),
+          receiver,
+        })
+        const hrmpChannelKey = hrmpChannels(channelId)
+        const decoded = await decodeProof(
+          extrinsic.validationData.relayParentStorageRoot,
+          [hrmpChannelKey],
+          extrinsic.relayChainState.trieNodes,
+        )
+        newEntries.push([hrmpChannelKey, decoded[hrmpChannelKey]])
+      }
+
+      const upgradeKey = upgradeGoAheadSignal(paraId)
+      const pendingUpgrade = await parent.get(compactHex(meta.query.parachainSystem.pendingValidationCode()))
+      if (pendingUpgrade) {
+        // send goAhead signal
+        const goAhead = meta.registry.createType('UpgradeGoAhead', 'GoAhead')
+        newEntries.push([upgradeKey, goAhead.toHex()])
+      } else {
+        // make sure previous goAhead is removed
+        newEntries.push([upgradeKey, null])
+      }
+
+      const { trieRootHash, nodes } = await createProof(extrinsic.relayChainState.trieNodes, newEntries)
+      const decodedSetAuthoritiesCopy = await decodeProof(
+        trieRootHash,
+        [orchestratorParaHeadKey],
+        nodes,
+      );
+      
+      console.dir(decodedSetAuthoritiesCopy, { depth: null})
+
+      console.log("new hash is ", trieRootHash);
+      console.log("newEntries is ", newEntries);
+      console.log("nodes ", nodes);
+      GLOBAL_NODES = nodes;
+      newData = {
+        ...extrinsic,
+        downwardMessages,
+        horizontalMessages,
+        validationData: {
+          ...extrinsic.validationData,
+          relayParentStorageRoot: trieRootHash,
+          relayParentNumber: extrinsic.validationData.relayParentNumber + 2,
+        },
+        relayChainState: {
+          trieNodes: nodes,
+        },
+      }
+    }
+  }
+
+  const meta = await parent.meta
+    if (!meta.tx.authoritiesNoting?.setLatestAuthoritiesData) {
+      return "0x00"
+    }
+
+    const extrinsics = await parent.extrinsics
+
+    let newData: LatestAuthorityData
+    const newEntries: [HexString, HexString | null][] = []
+
+    if (parent.number === 0) {
+      // chain started with genesis, mock 1st validationData
+      newData = MOCK_LATEST_AUTHORITY as LatestAuthorityData
+    } else {
+      const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
+        const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
+        return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
+      })
+      const validationDataExtrinsic = extrinsics.find((extrinsic) => {
+        const firstArg = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)?.args?.[0]
+        return firstArg && 'validationData' in firstArg
+      })
+
+      const { orchestratorChainState, relayChainState } = meta.registry
+        .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
+        .args[0].toJSON() as any as LatestAuthorityData
+
+      const setValidationExtrinsic = meta.registry
+        .createType<GenericExtrinsic>('GenericExtrinsic', validationDataExtrinsic)
+        .args[0].toJSON() as any as ValidationData
+
+      const decoded = await decodeProof(
+        setValidationExtrinsic.validationData.relayParentStorageRoot,
+        [...Object.values(WELL_KNOWN_KEYS)],
+        setValidationExtrinsic.relayChainState.trieNodes,
+      )
+
+      // newEntries.push([storageKey, storageValue])
+      // e.g. newEntries.push([key, u8aToHex(newSlot.toU8a())])
+      // add what we want to: utils/proof.ts
+
+      // Change below to the storage you want to prove, example below is for current slot
+      const currentSlot = meta.registry
+        .createType<Slot>('Slot', hexToU8a(decoded[WELL_KNOWN_KEYS.CURRENT_SLOT]))
+        .toNumber()
+      const newSlot = meta.registry.createType<Slot>('Slot', currentSlot + 2)
+      newEntries.push([WELL_KNOWN_KEYS.CURRENT_SLOT, u8aToHex(newSlot.toU8a())])
+
+      const { nodes: relayStateNodes } = await createProof(relayChainState.trieNodes, newEntries)
+
+      newData = {
+        relayChainState: {
+          trieNodes: GLOBAL_NODES,
+        },
+        orchestratorChainState,
+      }
+    }
+
+    const inherent = new GenericExtrinsic(meta.registry, meta.tx.authoritiesNoting.setLatestAuthoritiesData(newData))
+    console.log("new data latest authorities inherent ", inherent.toString())
+
+    return inherent.toHex()
+}
+
+export class SetLatestAuthorityData implements CreateInherents {
+  async createInherents(parent: Block, params: BuildBlockParams): Promise<HexString[]> {
+    const latestAuthoritiesInherent = await latestAuthoritInherent(parent, params)
+
+    return [latestAuthoritiesInherent]
   }
 }
