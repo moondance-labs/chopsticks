@@ -3,11 +3,59 @@ import { BuildBlockParams } from '../../txpool.js'
 import { CreateInherents } from '../index.js'
 import { GenericExtrinsic } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
-import { Slot } from '@polkadot/types/interfaces'
-import { ValidationData } from './validation-data.js'
-import { WELL_KNOWN_KEYS } from '../../../utils/proof.js'
-import { createProof, decodeProof } from '../../../wasm-executor/index.js'
-import { hexToU8a, u8aToHex } from '@polkadot/util'
+import { SetValidationData } from './validation-data.js'
+
+export type LatestAuthorityData = {
+  relayChainState: {
+    trieNodes: HexString[]
+  }
+  orchestratorChainState: {
+    trieNodes: HexString[]
+  }
+}
+
+export class SetLatestAuthorityData implements CreateInherents {
+  async createInherents(parent: Block, params: BuildBlockParams): Promise<HexString[]> {
+    const meta = await parent.meta
+    if (!meta.tx.authoritiesNoting?.setLatestAuthoritiesData) {
+      return []
+    }
+
+    // Run the setValidationData inherent again to generate the proof
+    await SetValidationData.getInstance().createInherents(parent, params)
+
+    const extrinsics = await parent.extrinsics
+
+    let newData: LatestAuthorityData
+
+    if (parent.number === 0) {
+      // chain started with genesis, mock 1st author
+      // TODO: this needs to be fixed elsewhere with
+      // src/blockchain/block-builder.ts:93
+      // const { consensusEngine, slot: originalSlot } = preRuntimes[0];
+      newData = MOCK_LATEST_AUTHORITY as LatestAuthorityData
+    } else {
+      const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
+        const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
+        return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
+      })
+
+      const { orchestratorChainState } = meta.registry
+        .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
+        .args[0].toJSON() as any as LatestAuthorityData
+
+      newData = {
+        relayChainState: {
+          trieNodes: SetValidationData.getInstance().trieNodes,
+        },
+        orchestratorChainState,
+      }
+    }
+
+    const inherent = new GenericExtrinsic(meta.registry, meta.tx.authoritiesNoting.setLatestAuthoritiesData(newData))
+    return [inherent.toHex()]
+  }
+}
 
 const MOCK_LATEST_AUTHORITY = {
   relayChainState: {
@@ -36,78 +84,3 @@ const MOCK_LATEST_AUTHORITY = {
     ],
   },
 } satisfies LatestAuthorityData
-
-export type LatestAuthorityData = {
-  relayChainState: {
-    trieNodes: HexString[]
-  }
-  orchestratorChainState: {
-    trieNodes: HexString[]
-  }
-}
-
-export class SetLatestAuthorityData implements CreateInherents {
-  async createInherents(parent: Block, _params: BuildBlockParams): Promise<HexString[]> {
-    const meta = await parent.meta
-    if (!meta.tx.authoritiesNoting?.setLatestAuthoritiesData) {
-      return []
-    }
-
-    const extrinsics = await parent.extrinsics
-
-    let newData: LatestAuthorityData
-    const newEntries: [HexString, HexString | null][] = []
-
-    if (parent.number === 0) {
-      // chain started with genesis, mock 1st validationData
-      newData = MOCK_LATEST_AUTHORITY as LatestAuthorityData
-    } else {
-      const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
-        const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
-        return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
-      })
-      const validationDataExtrinsic = extrinsics.find((extrinsic) => {
-        const firstArg = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)?.args?.[0]
-        return firstArg && 'validationData' in firstArg
-      })
-
-      const { orchestratorChainState, relayChainState } = meta.registry
-        .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
-        .args[0].toJSON() as any as LatestAuthorityData
-
-      const setValidationExtrinsic = meta.registry
-        .createType<GenericExtrinsic>('GenericExtrinsic', validationDataExtrinsic)
-        .args[0].toJSON() as any as ValidationData
-
-      const decoded = await decodeProof(
-        setValidationExtrinsic.validationData.relayParentStorageRoot,
-        [...Object.values(WELL_KNOWN_KEYS)],
-        setValidationExtrinsic.relayChainState.trieNodes,
-      )
-
-      // newEntries.push([storageKey, storageValue])
-      // e.g. newEntries.push([key, u8aToHex(newSlot.toU8a())])
-      // add what we want to: utils/proof.ts
-
-      // Change below to the storage you want to prove, example below is for current slot
-      const currentSlot = meta.registry
-        .createType<Slot>('Slot', hexToU8a(decoded[WELL_KNOWN_KEYS.CURRENT_SLOT]))
-        .toNumber()
-      const newSlot = meta.registry.createType<Slot>('Slot', currentSlot + 2)
-      newEntries.push([WELL_KNOWN_KEYS.CURRENT_SLOT, u8aToHex(newSlot.toU8a())])
-
-      const { nodes: relayStateNodes } = await createProof(relayChainState.trieNodes, newEntries)
-
-      newData = {
-        relayChainState: {
-          trieNodes: relayStateNodes,
-        },
-        orchestratorChainState,
-      }
-    }
-
-    const inherent = new GenericExtrinsic(meta.registry, meta.tx.authoritiesNoting.setLatestAuthoritiesData(newData))
-
-    return [inherent.toHex()]
-  }
-}
