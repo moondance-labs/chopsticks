@@ -92,27 +92,9 @@ export class SetValidationData implements CreateInherents {
         throw new Error('Missing validation data from block')
       }
 
-      const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
-        const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
-        return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
-      })
-
-      const { relayChainState: relayChainStateSetAuthorities } = meta.registry
-        .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
-        .args[0].toJSON() as any as LatestAuthorityData
-
       const extrinsic = meta.registry
         .createType<GenericExtrinsic>('GenericExtrinsic', validationDataExtrinsic)
         .args[0].toJSON() as any as ValidationData
-
-      const orchestratorId = await getOrchestratorId(parent.chain)
-      const orchestratorParaHeadKey = orchestratorParaHead(orchestratorId)
-
-      const decodedSetAuthorities = await decodeProof(
-        extrinsic.validationData.relayParentStorageRoot,
-        [orchestratorParaHeadKey],
-        relayChainStateSetAuthorities.trieNodes,
-      )
 
       const newEntries: [HexString, HexString | null][] = []
       const downwardMessages: DownwardMessage[] = []
@@ -127,13 +109,7 @@ export class SetValidationData implements CreateInherents {
       // TODO: refactor this to have a single decodeProof
       const decoded = await decodeProof(
         extrinsic.validationData.relayParentStorageRoot,
-        [
-          ...Object.values(WELL_KNOWN_KEYS),
-          dmqMqcHeadKey,
-          hrmpIngressChannelIndexKey,
-          hrmpEgressChannelIndexKey,
-          orchestratorParaHeadKey,
-        ],
+        [...Object.values(WELL_KNOWN_KEYS), dmqMqcHeadKey, hrmpIngressChannelIndexKey, hrmpEgressChannelIndexKey],
         extrinsic.relayChainState.trieNodes,
       )
       for (const key of Object.values(WELL_KNOWN_KEYS)) {
@@ -148,7 +124,6 @@ export class SetValidationData implements CreateInherents {
       }
       newEntries.push([hrmpIngressChannelIndexKey, decoded[hrmpIngressChannelIndexKey]])
       newEntries.push([hrmpEgressChannelIndexKey, decoded[hrmpEgressChannelIndexKey]])
-      newEntries.push([orchestratorParaHeadKey, decodedSetAuthorities[orchestratorParaHeadKey]])
 
       // inject paraHead
       const headData = meta.registry.createType('HeadData', (await parent.header).toHex())
@@ -268,6 +243,28 @@ export class SetValidationData implements CreateInherents {
       } else {
         // make sure previous goAhead is removed
         newEntries.push([upgradeKey, null])
+      }
+
+      // If container chain, inject orchestratorParaHead
+      if (meta.tx.authoritiesNoting?.setLatestAuthoritiesData) {
+        const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
+          const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
+          return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
+        })
+
+        const { relayChainState } = meta.registry
+          .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
+          .args[0].toJSON() as any as LatestAuthorityData
+
+        const orchestratorId = await getOrchestratorId(parent.chain)
+        const orchestratorParaHeadKey = orchestratorParaHead(orchestratorId)
+
+        const decodedSetAuthorities = await decodeProof(
+          extrinsic.validationData.relayParentStorageRoot,
+          [orchestratorParaHeadKey],
+          relayChainState.trieNodes,
+        )
+        newEntries.push([orchestratorParaHeadKey, decodedSetAuthorities[orchestratorParaHeadKey]])
       }
 
       const { trieRootHash, nodes } = await createProof(extrinsic.relayChainState.trieNodes, newEntries)
