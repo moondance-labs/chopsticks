@@ -21,18 +21,16 @@ export class SetLatestAuthorityData implements CreateInherents {
       return []
     }
 
-    // Run the setValidationData inherent again to generate the proof
-    await SetValidationData.getInstance().createInherents(parent, params)
-
     const extrinsics = await parent.extrinsics
 
     let newData: LatestAuthorityData
 
     if (parent.number === 0) {
       // chain started with genesis, mock 1st author
+      //
       // TODO: this needs to be fixed elsewhere with
-      // src/blockchain/block-builder.ts:93
-      // const { consensusEngine, slot: originalSlot } = preRuntimes[0];
+      //       src/blockchain/block-builder.ts:93
+      //       const { consensusEngine, slot: originalSlot } = preRuntimes[0];
       newData = MOCK_LATEST_AUTHORITY as LatestAuthorityData
     } else {
       const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
@@ -46,7 +44,7 @@ export class SetLatestAuthorityData implements CreateInherents {
 
       newData = {
         relayChainState: {
-          trieNodes: SetValidationData.getInstance().trieNodes,
+          trieNodes: await SetValidationData.retrieveTrieNodes(parent, params),
         },
         orchestratorChainState,
       }

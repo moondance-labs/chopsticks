@@ -61,7 +61,13 @@ export type ValidationData = {
 
 export class SetValidationData implements CreateInherents {
   public static instance: SetValidationData
-  public trieNodes: HexString[] = []
+  private trieNodes?: HexString[]
+
+  public static async retrieveTrieNodes(parent: Block, params: BuildBlockParams): Promise<HexString[]> {
+    const instance = SetValidationData.getInstance()
+    await instance.createInherents(parent, params)
+    return instance.trieNodes!
+  }
 
   public static getInstance(): SetValidationData {
     if (!SetValidationData.instance) {
