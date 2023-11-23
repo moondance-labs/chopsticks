@@ -116,7 +116,7 @@ export class SetValidationData implements CreateInherents {
         if (key === WELL_KNOWN_KEYS.CURRENT_SLOT) {
           // increment current slot
           const currentSlot = meta.registry.createType<Slot>('Slot', hexToU8a(decoded[key])).toNumber()
-          const newSlot = meta.registry.createType<Slot>('Slot', currentSlot)
+          const newSlot = meta.registry.createType<Slot>('Slot', currentSlot + 2)
           newEntries.push([key, u8aToHex(newSlot.toU8a())])
         } else {
           newEntries.push([key, decoded[key]])
