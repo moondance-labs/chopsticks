@@ -17,6 +17,7 @@ import {
 import { ProviderInterface } from '@polkadot/rpc-provider/types'
 import { RegisteredTypes } from '@polkadot/types/types'
 import { SetLatestAuthorData } from './blockchain/inherent/parachain/latest-author.js'
+import { SetLatestAuthorityData } from './blockchain/inherent/parachain/latest-authority.js'
 import { defaultLogger } from './logger.js'
 
 export type SetupOptions = {
@@ -80,6 +81,7 @@ export const setup = async (options: SetupOptions) => {
     new SetNimbusAuthorInherent(),
     new SetBabeRandomness(),
     new SetLatestAuthorData(),
+    new SetLatestAuthorityData(),
   ])
 
   return new Blockchain({

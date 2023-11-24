@@ -17,6 +17,11 @@ const hash = (prefix: HexString, suffix: Uint8Array) => {
   return u8aToHex(u8aConcat(hexToU8a(prefix), xxhashAsU8a(suffix, 64), suffix))
 }
 
+export const orchestratorParaHead = (paraId: u32) => {
+  const prefix = '0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c3'
+  return hash(prefix, paraId.toU8a())
+}
+
 export const dmqMqcHead = (paraId: u32) => {
   const prefix = '0x63f78c98723ddc9073523ef3beefda0c4d7fefc408aac59dbfe80a72ac8e3ce5'
   return hash(prefix, paraId.toU8a())

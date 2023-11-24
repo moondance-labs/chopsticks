@@ -2,13 +2,14 @@ import {
   AccountInfo,
   ApplyExtrinsicResult,
   Call,
+  ConsensusEngineId,
   Header,
   RawBabePreDigest,
   TransactionValidityError,
 } from '@polkadot/types/interfaces'
 import { Block } from './block.js'
 import { Blockchain } from './index.js'
-import { GenericExtrinsic } from '@polkadot/types'
+import { Bytes, GenericExtrinsic } from '@polkadot/types'
 import { HexString } from '@polkadot/util/types'
 import { StorageLayer, StorageValueKind } from './storage-layer.js'
 import { TaskCallResponse } from '../wasm-executor/index.js'
@@ -31,12 +32,32 @@ const parseHeader = (header: Header) => {
   return { preRuntimes, rest }
 }
 
-export const getAuthorities = async (chain: Blockchain) => {
+const getAuraAuthorities = async (chain: Blockchain) => {
   const registry = (await chain.head.meta).registry
   const rawResponse = await chain.head.call('AuraApi_authorities', [])
   const authorities = registry.createType('Vec<AuthorityId>', hexToU8a(rawResponse.result))
   return authorities
 }
+
+const getNotingAuthorities = async (chain: Blockchain) => {
+  const meta = await chain.head.meta
+  const authorities = await chain.head.read(
+    'Vec<NimbusPrimitivesNimbusCryptoPublic>',
+    meta.query.authoritiesNoting.authorities,
+  )
+  return authorities!
+}
+
+type PreRuntime = {
+  consensusEngine: ConsensusEngineId
+  slot: Bytes
+}
+
+const isContainerChain = async (chain: Blockchain) => (await chain.head.meta).query.authoritiesNoting !== undefined
+
+const isTanssi = (preRuntimes: PreRuntime[]) =>
+  preRuntimes?.find(({ consensusEngine }) => consensusEngine.isAura) &&
+  preRuntimes?.find(({ consensusEngine }) => consensusEngine.isNimbus)
 
 const getNewSlot = (digest: RawBabePreDigest, slotNumber: number) => {
   if (digest.isPrimary) {
@@ -75,11 +96,10 @@ export const newHeader = async (head: Block, unsafeBlockHeight?: number) => {
   const { preRuntimes, rest } = parseHeader(parentHeader)
 
   // Tanssi Consensus Logic
-  if (
-    preRuntimes?.find(({ consensusEngine }) => consensusEngine.isAura) &&
-    preRuntimes?.find(({ consensusEngine }) => consensusEngine.isNimbus)
-  ) {
-    const authorities = await getAuthorities(head.chain)
+  if (preRuntimes && isTanssi(preRuntimes)) {
+    const authorities = (await isContainerChain(head.chain))
+      ? await getNotingAuthorities(head.chain)
+      : await getAuraAuthorities(head.chain)
     const auraBlob = preRuntimes?.find((x) => x.consensusEngine.isAura)
     const nimbusBlob = preRuntimes?.find((x) => x.consensusEngine.toString() == 'nmbs')
     const prevSlot = Number(newLogs[0].asPreRuntime[1].reverse().toHex())
@@ -88,6 +108,7 @@ export const newHeader = async (head: Block, unsafeBlockHeight?: number) => {
       'NimbusPrimitivesNimbusCryptoPublic',
       authorities[(prevSlot + 1) % authorities.length],
     )
+
     newLogs = [
       { PreRuntime: [auraBlob!.consensusEngine, newSlot] },
       { PreRuntime: [nimbusBlob?.consensusEngine, newKey] },

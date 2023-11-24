@@ -1,24 +1,25 @@
 import { AbridgedHrmpChannel, HrmpChannelId, Slot } from '@polkadot/types/interfaces'
-import { GenericExtrinsic } from '@polkadot/types'
-import { HexString } from '@polkadot/util/types'
-import { hexToU8a, u8aConcat, u8aToHex } from '@polkadot/util'
-import _ from 'lodash'
-
 import { Block } from '../../block.js'
 import { BuildBlockParams, DownwardMessage, HorizontalMessage } from '../../txpool.js'
 import { CreateInherents } from '../index.js'
+import { GenericExtrinsic, u32 } from '@polkadot/types'
+import { HexString } from '@polkadot/util/types'
+import { LatestAuthorityData } from './latest-authority.js'
 import {
   WELL_KNOWN_KEYS,
   dmqMqcHead,
   hrmpChannels,
   hrmpEgressChannelIndex,
   hrmpIngressChannelIndex,
+  orchestratorParaHead,
   paraHead,
   upgradeGoAheadSignal,
 } from '../../../utils/proof.js'
 import { blake2AsHex, blake2AsU8a } from '@polkadot/util-crypto'
-import { compactHex, getParaId } from '../../../utils/index.js'
+import { compactHex, getOrchestratorId, getParaId } from '../../../utils/index.js'
 import { createProof, decodeProof } from '../../../wasm-executor/index.js'
+import { hexToU8a, u8aConcat, u8aToHex } from '@polkadot/util'
+import _ from 'lodash'
 
 const MOCK_VALIDATION_DATA = {
   validationData: {
@@ -59,6 +60,22 @@ export type ValidationData = {
 }
 
 export class SetValidationData implements CreateInherents {
+  public static instance: SetValidationData
+  private trieNodes?: HexString[]
+
+  public static async retrieveTrieNodes(parent: Block, params: BuildBlockParams): Promise<HexString[]> {
+    const instance = SetValidationData.getInstance()
+    await instance.createInherents(parent, params)
+    return instance.trieNodes!
+  }
+
+  public static getInstance(): SetValidationData {
+    if (!SetValidationData.instance) {
+      SetValidationData.instance = new SetValidationData()
+    }
+    return SetValidationData.instance
+  }
+
   async createInherents(parent: Block, params: BuildBlockParams): Promise<HexString[]> {
     const meta = await parent.meta
     if (!meta.tx.parachainSystem?.setValidationData) {
@@ -80,6 +97,7 @@ export class SetValidationData implements CreateInherents {
       if (!validationDataExtrinsic) {
         throw new Error('Missing validation data from block')
       }
+
       const extrinsic = meta.registry
         .createType<GenericExtrinsic>('GenericExtrinsic', validationDataExtrinsic)
         .args[0].toJSON() as any as ValidationData
@@ -100,7 +118,6 @@ export class SetValidationData implements CreateInherents {
         [...Object.values(WELL_KNOWN_KEYS), dmqMqcHeadKey, hrmpIngressChannelIndexKey, hrmpEgressChannelIndexKey],
         extrinsic.relayChainState.trieNodes,
       )
-
       for (const key of Object.values(WELL_KNOWN_KEYS)) {
         if (key === WELL_KNOWN_KEYS.CURRENT_SLOT) {
           // increment current slot
@@ -234,7 +251,31 @@ export class SetValidationData implements CreateInherents {
         newEntries.push([upgradeKey, null])
       }
 
+      // If container chain, inject orchestratorParaHead
+      if (meta.tx.authoritiesNoting?.setLatestAuthoritiesData) {
+        const authorityNotingDataExtrinsic = extrinsics.find((extrinsic) => {
+          const { method, section } = meta.registry.createType<GenericExtrinsic>('GenericExtrinsic', extrinsic)!.method
+          return method === 'setLatestAuthoritiesData' && section === 'authoritiesNoting'
+        })
+
+        const { relayChainState } = meta.registry
+          .createType<GenericExtrinsic>('GenericExtrinsic', authorityNotingDataExtrinsic)
+          .args[0].toJSON() as any as LatestAuthorityData
+
+        const orchestratorId = await getOrchestratorId(parent.chain)
+        const orchestratorParaHeadKey = orchestratorParaHead(orchestratorId)
+
+        const decodedSetAuthorities = await decodeProof(
+          extrinsic.validationData.relayParentStorageRoot,
+          [orchestratorParaHeadKey],
+          relayChainState.trieNodes,
+        )
+        newEntries.push([orchestratorParaHeadKey, decodedSetAuthorities[orchestratorParaHeadKey]])
+      }
+
       const { trieRootHash, nodes } = await createProof(extrinsic.relayChainState.trieNodes, newEntries)
+
+      SetValidationData.getInstance().trieNodes = nodes
 
       newData = {
         ...extrinsic,
