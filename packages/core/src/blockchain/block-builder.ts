@@ -16,6 +16,8 @@ import { TaskCallResponse } from '../wasm-executor/index.js'
 import { compactAddLength, hexToU8a, stringToHex, u8aConcat } from '@polkadot/util'
 import { compactHex, getCurrentSlot } from '../utils/index.js'
 import { defaultLogger, truncate } from '../logger.js'
+import { u8aToBigInt } from '@polkadot/util'
+import { getCurrentTimestamp, getSlotDuration } from '../utils/index.js'
 
 const logger = defaultLogger.child({ name: 'block-builder' })
 
@@ -61,8 +63,11 @@ export const newHeader = async (head: Block, unsafeBlockHeight?: number) => {
   let newLogs = parentHeader.digest.logs as any
   const consensus = getConsensus(parentHeader)
   if (consensus?.consensusEngine.isAura) {
-    const slot = await getCurrentSlot(head.chain)
-    const newSlot = compactAddLength(meta.registry.createType('Slot', slot + 1).toU8a())
+    const slotDuration = await getSlotDuration(head.chain)
+    const currentTimestamp = await getCurrentTimestamp(head.chain)
+
+    const newSlot = compactAddLength(meta.registry.createType('Slot', (currentTimestamp + BigInt(slotDuration))/BigInt(slotDuration)).toU8a())
+    console.log("new slot is", BigInt(u8aToBigInt(newSlot)))
     newLogs = [{ PreRuntime: [consensus.consensusEngine, newSlot] }, ...consensus.rest]
   } else if (consensus?.consensusEngine.isBabe) {
     const slot = await getCurrentSlot(head.chain)
