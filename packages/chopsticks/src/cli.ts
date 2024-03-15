@@ -4,7 +4,7 @@ import _ from 'lodash'
 import yargs from 'yargs'
 import type { MiddlewareFunction } from 'yargs'
 
-import { Blockchain, connectParachains, connectVertical } from '@acala-network/chopsticks-core'
+import { Blockchain, connectParachains, connectVertical } from '@tanssi/chopsticks-core'
 import { configSchema, fetchConfig, getYargsOptions } from './schema/index.js'
 import { pluginExtendCli } from './plugins/index.js'
 import { setupWithServer } from './index.js'

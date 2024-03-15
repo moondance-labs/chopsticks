@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import path from 'path'
 
 import { api, chain, setupApi } from '../helper.js'
-import { compactHex } from '@acala-network/chopsticks'
-import { overrideStorage, overrideWasm } from '@acala-network/chopsticks/utils/override.js'
+import { compactHex } from '@tanssi/chopsticks'
+import { overrideStorage, overrideWasm } from '@tanssi/chopsticks/utils/override.js'
 
 setupApi({
   endpoint: 'wss://acala-rpc.aca-api.network',

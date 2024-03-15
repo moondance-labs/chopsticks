@@ -1,4 +1,4 @@
-import { setupWithServer, destroyWorker } from '@acala-network/chopsticks'
+import { setupWithServer, destroyWorker } from '@tanssi/chopsticks'
 
 const server = await setupWithServer({
 	endpoint: ['wss://polkadot-rpc.dwellir.com', 'wss://rpc.ibp.network/polkadot', 'wss://rpc.polkadot.io'],

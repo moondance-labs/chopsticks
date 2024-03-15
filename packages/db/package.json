@@ -1,6 +1,6 @@
 {
-	"name": "@acala-network/chopsticks-db",
-	"version": "0.9.10",
+	"name": "@tanssi/chopsticks-db",
+	"version": "0.9.10-b",
 	"author": "Acala Developers <hello@acala.network>",
 	"license": "Apache-2.0",
 	"type": "module",
@@ -11,8 +11,8 @@
 		"build:esm": "swc ./src --config-file ../../.esmswcrc -d dist/esm && tsc -p tsconfig.json --declarationDir dist/esm"
 	},
 	"dependencies": {
-		"@acala-network/chopsticks-core": "workspace:*",
 		"@polkadot/util": "^12.6.2",
+		"@tanssi/chopsticks-core": "workspace:*",
 		"idb": "^8.0.0",
 		"sqlite3": "^5.1.7",
 		"typeorm": "^0.3.19"

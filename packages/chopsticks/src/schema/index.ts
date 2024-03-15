@@ -1,4 +1,4 @@
-import { BuildBlockMode, defaultLogger, genesisSchema, isUrl } from '@acala-network/chopsticks-core'
+import { BuildBlockMode, defaultLogger, genesisSchema, isUrl } from '@tanssi/chopsticks-core'
 import { HexString } from '@polkadot/util/types'
 import { ZodNativeEnum, ZodRawShape, ZodTypeAny, z } from 'zod'
 import { basename, extname } from 'node:path'

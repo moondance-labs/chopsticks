@@ -18,16 +18,16 @@
 		"baseUrl": ".",
 		"composite": true,
 		"paths": {
-			"@acala-network/chopsticks": ["packages/chopsticks/src/index.ts"],
-			"@acala-network/chopsticks/*": ["packages/chopsticks/src/*"],
-			"@acala-network/chopsticks-core": ["packages/core/src/index.ts"],
-			"@acala-network/chopsticks-core/*": ["packages/core/src/*"],
-			"@acala-network/chopsticks-db": ["packages/db/src/index.ts"],
-			"@acala-network/chopsticks-db/*": ["packages/db/src/*"],
-			"@acala-network/chopsticks-testing": ["packages/testing/src/index.ts"],
-			"@acala-network/chopsticks-testing/*": ["packages/testing/src/*"],
-			"@acala-network/chopsticks-utils": ["packages/utils/src/index.ts"],
-			"@acala-network/chopsticks-utils/*": ["packages/utils/src/*"]
+			"@tanssi/chopsticks": ["packages/chopsticks/src/index.ts"],
+			"@tanssi/chopsticks/*": ["packages/chopsticks/src/*"],
+			"@tanssi/chopsticks-core": ["packages/core/src/index.ts"],
+			"@tanssi/chopsticks-core/*": ["packages/core/src/*"],
+			"@tanssi/chopsticks-db": ["packages/db/src/index.ts"],
+			"@tanssi/chopsticks-db/*": ["packages/db/src/*"],
+			"@tanssi/chopsticks-testing": ["packages/testing/src/index.ts"],
+			"@tanssi/chopsticks-testing/*": ["packages/testing/src/*"],
+			"@tanssi/chopsticks-utils": ["packages/utils/src/index.ts"],
+			"@tanssi/chopsticks-utils/*": ["packages/utils/src/*"]
 		}
 	}
 }

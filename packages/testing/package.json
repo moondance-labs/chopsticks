@@ -1,5 +1,5 @@
 {
-	"name": "@acala-network/chopsticks-testing",
+	"name": "@tanssi/chopsticks-testing",
 	"version": "0.9.10",
 	"author": "Acala Developers <hello@acala.network>",
 	"license": "Apache-2.0",
@@ -11,9 +11,9 @@
 		"build:esm": "swc ./src --config-file ../../.esmswcrc -d dist/esm && tsc -p tsconfig.json --declarationDir dist/esm"
 	},
 	"dependencies": {
-		"@acala-network/chopsticks-utils": "workspace:*",
 		"@polkadot/api": "^10.11.2",
-		"@polkadot/types": "^10.11.2"
+		"@polkadot/types": "^10.11.2",
+		"@tanssi/chopsticks-utils": "workspace:*"
 	},
 	"devDependencies": {
 		"@swc/cli": "0.1.65",

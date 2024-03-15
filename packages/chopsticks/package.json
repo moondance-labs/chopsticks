@@ -1,6 +1,6 @@
 {
-	"name": "@acala-network/chopsticks",
-	"version": "0.9.10",
+	"name": "@tanssi/chopsticks",
+	"version": "0.9.10-b",
 	"author": "Acala Developers <hello@acala.network>",
 	"license": "Apache-2.0",
 	"bin": "./chopsticks.cjs",
@@ -13,13 +13,13 @@
 		"docs:prep": "typedoc"
 	},
 	"dependencies": {
-		"@acala-network/chopsticks-core": "workspace:*",
-		"@acala-network/chopsticks-db": "workspace:*",
 		"@pnpm/npm-conf": "^2.2.2",
 		"@polkadot/api-augment": "^10.11.2",
 		"@polkadot/types": "^10.11.2",
 		"@polkadot/util": "^12.6.2",
 		"@polkadot/util-crypto": "^12.6.2",
+		"@tanssi/chopsticks-core": "workspace:*",
+		"@tanssi/chopsticks-db": "workspace:*",
 		"axios": "^1.6.5",
 		"dotenv": "^16.4.0",
 		"global-agent": "^3.0.0",

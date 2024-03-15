@@ -12,12 +12,12 @@
 		"test": "playwright test"
 	},
 	"devDependencies": {
-		"@acala-network/chopsticks-core": "workspace:*",
-		"@acala-network/chopsticks-db": "workspace:*",
 		"@emotion/react": "^11.11.3",
 		"@emotion/styled": "^11.11.0",
 		"@mui/material": "^5.15.6",
 		"@playwright/test": "^1.41.1",
+		"@tanssi/chopsticks-core": "workspace:*",
+		"@tanssi/chopsticks-db": "workspace:*",
 		"@types/react": "^18.2.48",
 		"@types/react-dom": "^18.2.18",
 		"@vitejs/plugin-react": "^4.2.1",

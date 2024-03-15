@@ -1,8 +1,8 @@
 import './utils/tunnel.js'
-import { BlockEntry, GenesisProvider, defaultLogger, isUrl, setup, timeTravel } from '@acala-network/chopsticks-core'
+import { BlockEntry, GenesisProvider, defaultLogger, isUrl, setup, timeTravel } from '@tanssi/chopsticks-core'
 import { Config } from './schema/index.js'
 import { HexString } from '@polkadot/util/types'
-import { SqliteDatabase } from '@acala-network/chopsticks-db'
+import { SqliteDatabase } from '@tanssi/chopsticks-db'
 import { overrideStorage, overrideWasm } from './utils/override.js'
 import axios from 'axios'
 

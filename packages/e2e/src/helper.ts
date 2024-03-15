@@ -4,23 +4,23 @@ import { ProviderInterface } from '@polkadot/rpc-provider/types'
 import { RegisteredTypes } from '@polkadot/types/types'
 import { beforeAll, beforeEach, expect, vi } from 'vitest'
 
-import { Api } from '@acala-network/chopsticks'
+import { Api } from '@tanssi/chopsticks'
 import {
   Blockchain,
   BuildBlockMode,
   GenesisProvider,
   StorageValues,
   genesisSetup,
-} from '@acala-network/chopsticks-core'
-import { SqliteDatabase } from '@acala-network/chopsticks-db'
-import { createServer } from '@acala-network/chopsticks/server.js'
-import { defer } from '@acala-network/chopsticks-core/utils/index.js'
-import { genesisFromUrl } from '@acala-network/chopsticks/context.js'
-import { handler } from '@acala-network/chopsticks/rpc/index.js'
-import { inherentProviders } from '@acala-network/chopsticks-core/blockchain/inherent/index.js'
-import { withExpect } from '@acala-network/chopsticks-testing'
+} from '@tanssi/chopsticks-core'
+import { SqliteDatabase } from '@tanssi/chopsticks-db'
+import { createServer } from '@tanssi/chopsticks/server.js'
+import { defer } from '@tanssi/chopsticks-core/utils/index.js'
+import { genesisFromUrl } from '@tanssi/chopsticks/context.js'
+import { handler } from '@tanssi/chopsticks/rpc/index.js'
+import { inherentProviders } from '@tanssi/chopsticks-core/blockchain/inherent/index.js'
+import { withExpect } from '@tanssi/chopsticks-testing'
 
-export { testingPairs, setupContext } from '@acala-network/chopsticks-testing'
+export { testingPairs, setupContext } from '@tanssi/chopsticks-testing'
 
 export type SetupOption = {
   endpoint?: string | string[]

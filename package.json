@@ -15,7 +15,7 @@
 		"prepare": "husky install",
 		"clean": "yarn workspaces foreach --all -pvit run clean",
 		"build": "yarn workspaces foreach --all -pvit --include '@acala-network/*' run build",
-		"build-wasm": "yarn workspace @acala-network/chopsticks-executor run build",
+		"build-wasm": "yarn workspace @tanssi/chopsticks-executor run build",
 		"build:web-test": "yarn build && yarn workspace web-test run build",
 		"check": "cd executor && cargo check --locked",
 		"test": "vitest run",

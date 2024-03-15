@@ -1,6 +1,6 @@
 import { HexString } from '@polkadot/util/types'
 import { configSchema, getYargsOptions } from '../../schema/index.js'
-import { decodeKey } from '@acala-network/chopsticks-core'
+import { decodeKey } from '@tanssi/chopsticks-core'
 import { setupContext } from '../../context.js'
 import type { Argv } from 'yargs'
 

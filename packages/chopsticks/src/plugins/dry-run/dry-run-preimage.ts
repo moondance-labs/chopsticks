@@ -2,7 +2,7 @@ import { HexString } from '@polkadot/util/types'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { compactAddLength, hexToU8a } from '@polkadot/util'
 
-import { Block, newHeader, runTask, setStorage, taskHandler } from '@acala-network/chopsticks-core'
+import { Block, newHeader, runTask, setStorage, taskHandler } from '@tanssi/chopsticks-core'
 import { DryRunSchemaType } from './index.js'
 import { defaultLogger } from '../../logger.js'
 import { generateHtmlDiffPreviewFile } from '../../utils/generate-html-diff.js'

@@ -5,7 +5,7 @@ import {
   SubscriptionManager,
   allHandlers as coreHandlers,
   defaultLogger,
-} from '@acala-network/chopsticks-core'
+} from '@tanssi/chopsticks-core'
 
 import { loadRpcPlugin, rpcPluginMethods } from '../plugins/index.js'
 

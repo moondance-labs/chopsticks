@@ -8,7 +8,7 @@ import { Block } from '../blockchain/block.js'
 import { PREFIX_LENGTH, stripChildPrefix } from '../utils/index.js'
 import { defaultLogger, truncate } from '../logger.js'
 
-import type { JsCallback } from '@acala-network/chopsticks-executor'
+import type { JsCallback } from '@tanssi/chopsticks-executor'
 export { JsCallback }
 
 export type RuntimeVersion = {

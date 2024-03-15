@@ -7,5 +7,5 @@
 
 |  Package | Description |
 |  --- | --- |
-|  [@acala-network/chopsticks](./chopsticks/README.md)  | Chopsticks cli and rpc server |
-|  [@acala-network/chopsticks-core](./core/README.md)   | Blockchain data structure |
+|  [@tanssi/chopsticks](./chopsticks/README.md)  | Chopsticks cli and rpc server |
+|  [@tanssi/chopsticks-core](./core/README.md)   | Blockchain data structure |

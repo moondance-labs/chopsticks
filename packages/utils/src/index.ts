@@ -7,9 +7,9 @@ import {
   defaultLogger,
   fetchConfig,
   setupWithServer,
-} from '@acala-network/chopsticks'
+} from '@tanssi/chopsticks'
 import { Codec } from '@polkadot/types/types'
-import { Config } from '@acala-network/chopsticks/schema/index.js'
+import { Config } from '@tanssi/chopsticks/schema/index.js'
 import { HexString } from '@polkadot/util/types'
 import { Keyring, createTestKeyring } from '@polkadot/keyring'
 import { SubmittableExtrinsic } from '@polkadot/api-base/types'

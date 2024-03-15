@@ -1,9 +1,9 @@
 import { beforeEach, describe, it } from 'vitest'
 
-import { DownwardMessage } from '@acala-network/chopsticks-core/blockchain/txpool.js'
-import { connectDownward } from '@acala-network/chopsticks-core/xcm/downward.js'
-import { connectUpward } from '@acala-network/chopsticks-core/xcm/upward.js'
-import { setStorage } from '@acala-network/chopsticks-core'
+import { DownwardMessage } from '@tanssi/chopsticks-core/blockchain/txpool.js'
+import { connectDownward } from '@tanssi/chopsticks-core/xcm/downward.js'
+import { connectUpward } from '@tanssi/chopsticks-core/xcm/upward.js'
+import { setStorage } from '@tanssi/chopsticks-core'
 
 import { check, checkSystemEvents, testingPairs } from './helper.js'
 import networks, { Network } from './networks.js'

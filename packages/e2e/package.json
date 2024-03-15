@@ -1,5 +1,5 @@
 {
-	"name": "@acala-network/chopsticks-e2e",
+	"name": "@tanssi/chopsticks-e2e",
 	"author": "Acala Developers <hello@acala.network>",
 	"license": "Apache-2.0",
 	"private": true,
@@ -11,9 +11,9 @@
 		"node": ">=v18"
 	},
 	"devDependencies": {
-		"@acala-network/chopsticks": "workspace:*",
-		"@acala-network/chopsticks-testing": "workspace:*",
 		"@polkadot/api": "^10.11.2",
+		"@tanssi/chopsticks": "workspace:*",
+		"@tanssi/chopsticks-testing": "workspace:*",
 		"typescript": "^5.3.3",
 		"vitest": "^1.2.1"
 	}

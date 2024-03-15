@@ -4,7 +4,7 @@ import { z } from 'zod'
 import _ from 'lodash'
 import type { Argv } from 'yargs'
 
-import { runTask, taskHandler } from '@acala-network/chopsticks-core'
+import { runTask, taskHandler } from '@tanssi/chopsticks-core'
 
 import { configSchema, getYargsOptions } from '../../schema/index.js'
 import { generateHtmlDiffPreviewFile } from '../../utils/generate-html-diff.js'

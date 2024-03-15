@@ -1,5 +1,5 @@
 import { describe, it } from 'vitest'
-import { setupContext } from '@acala-network/chopsticks-testing'
+import { setupContext } from '@tanssi/chopsticks-testing'
 
 describe.runIf(process.env.CI || process.env.RUN_ALL)('Nimbus author inherent mock', async () => {
   it('Manta build blocks', async () => {

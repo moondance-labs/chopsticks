@@ -1,4 +1,4 @@
-import { Handlers } from '@acala-network/chopsticks-core'
+import { Handlers } from '@tanssi/chopsticks-core'
 import { lstatSync, readdirSync } from 'fs'
 import _ from 'lodash'
 import type { Argv } from 'yargs'

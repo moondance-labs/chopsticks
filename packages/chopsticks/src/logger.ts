@@ -1,1 +1,1 @@
-export { defaultLogger, truncate } from '@acala-network/chopsticks-core'
+export { defaultLogger, truncate } from '@tanssi/chopsticks-core'

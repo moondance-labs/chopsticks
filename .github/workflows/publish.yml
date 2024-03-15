@@ -39,40 +39,40 @@ jobs:
 
     # version containing a hyphen, publish as beta, i.e: 1.0.0-1
     - run: |
-        if npm pkg get version --workspace @acala-network/chopsticks | jq '."@acala-network/chopsticks"' | grep '-'; then TAG='--tag beta'; fi
+        if npm pkg get version --workspace @tanssi/chopsticks | jq '."@tanssi/chopsticks"' | grep '-'; then TAG='--tag beta'; fi
         echo "NPM_TAG=$TAG" >> $GITHUB_ENV
 
     # Writes token to .yarnrc.yml. If written directly in .yarnrc.yml, it will cause an error
     - run: |
         echo npmAuthToken: "\${NPM_AUTH_TOKEN}" >> ./.yarnrc.yml
 
-    - name: Publish @acala-network/chopsticks-executor
-      run: yarn workspace @acala-network/chopsticks-executor npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
+    - name: Publish @tanssi/chopsticks-executor
+      run: yarn workspace @tanssi/chopsticks-executor npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
       env:
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
-    - name: Publish @acala-network/chopsticks-core
-      run: yarn workspace @acala-network/chopsticks-core npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
+    - name: Publish @tanssi/chopsticks-core
+      run: yarn workspace @tanssi/chopsticks-core npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
       env:
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
-    - name: Publish @acala-network/chopsticks-db
-      run: yarn workspace @acala-network/chopsticks-db npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
+    - name: Publish @tanssi/chopsticks-db
+      run: yarn workspace @tanssi/chopsticks-db npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
       env:
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
-    - name: Publish @acala-network/chopsticks
-      run: yarn workspace @acala-network/chopsticks npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
+    - name: Publish @tanssi/chopsticks
+      run: yarn workspace @tanssi/chopsticks npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
       env:
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
-    - name: Publish @acala-network/chopsticks-testing
-      run: yarn workspace @acala-network/chopsticks-testing npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
+    - name: Publish @tanssi/chopsticks-testing
+      run: yarn workspace @tanssi/chopsticks-testing npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
       env:
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
-    - name: Publish @acala-network/chopsticks-utils
-      run: yarn workspace @acala-network/chopsticks-utils npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
+    - name: Publish @tanssi/chopsticks-utils
+      run: yarn workspace @tanssi/chopsticks-utils npm publish --tolerate-republish --access public ${{ env.NPM_TAG }}
       env:
         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
